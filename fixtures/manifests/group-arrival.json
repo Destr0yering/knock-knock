@@ -1,0 +1,33 @@
+{
+  "fixture": "group-arrival",
+  "description": "Synthetic, media-free manifest for a three-person front-door arrival.",
+  "faces": [
+    {
+      "key": "person-1",
+      "face_detected": true,
+      "bounding_box": {"left": 0.08, "top": 0.18, "width": 0.22, "height": 0.48},
+      "suggested_profile_id": "demo-profile-morgan",
+      "similarity": 0.96,
+      "confidence_band": "high",
+      "clip_frame_offsets_ms": [0, 750, 1500]
+    },
+    {
+      "key": "person-2",
+      "face_detected": true,
+      "bounding_box": {"left": 0.39, "top": 0.2, "width": 0.2, "height": 0.45},
+      "suggested_profile_id": null,
+      "similarity": 0.54,
+      "confidence_band": "unknown",
+      "clip_frame_offsets_ms": [250, 1000, 1750]
+    },
+    {
+      "key": "person-3",
+      "face_detected": false,
+      "bounding_box": null,
+      "suggested_profile_id": null,
+      "similarity": 0.0,
+      "confidence_band": "unknown",
+      "clip_frame_offsets_ms": []
+    }
+  ]
+}

@@ -4,8 +4,8 @@
 
 Knock Knock is a privacy-conscious visitor-awareness foundation for homes and businesses. A Ring
 motion or doorbell event yields a freeze frame, a swappable vision engine suggests a familiar
-profile or `unknown`, and the user remains responsible for confirming, correcting, categorizing,
-or deleting the result.
+profile or `unknown`, and the user remains responsible for confirming, correcting, and categorizing
+the result.
 
 This repository is a proof-of-concept foundation, not an access-control or safety system. Never
 unlock a door, deny access, contact law enforcement, or make another consequential decision from a
@@ -68,6 +68,18 @@ Then visit `http://127.0.0.1:8000/docs`. With `CAMERA_BACKEND=simulator`, place 
 image at `data/simulator/door.jpg` and POST the sample event shown in the API documentation to
 `/v1/webhooks/ring`.
 
+Run the complete credential-free, three-person workflow without starting a server:
+
+```powershell
+python scripts/run_local_demo.py
+```
+
+The script uses the media-free `group-arrival` manifest, submits a member profile proposal,
+proves that the member cannot approve it, applies the owner's approval, saves one photo, and prints
+the resulting append-only audit event types. For manual API exploration, send
+`X-Demo-User: demo-owner` or `X-Demo-User: demo-member` in Swagger. Demo routes are disabled when
+the configured environment is not `development`, `dev`, or `test`.
+
 Run quality checks:
 
 ```powershell
@@ -121,8 +133,8 @@ Confidence is advisory. The threshold is configurable, and every suggested match
 
 ## Privacy and responsible use
 
-- Obtain informed consent before enrolling a person's face; provide access, correction, export,
-  and deletion controls.
+- Obtain informed consent before enrolling a person's face and provide clear access and correction
+  controls. This MVP uses fixed security retention instead of user-configurable deletion.
 - Minimize retention. Store the event ID and decision when a full image is unnecessary.
 - Encrypt biometric references, OAuth tokens, and visitor logs at rest in any deployed system.
 - Separate household or business tenants and enforce authenticated, least-privilege API access.
@@ -138,6 +150,11 @@ Confidence is advisory. The threshold is configurable, and every suggested match
 - `GET/POST /v1/profiles` — list/register profile metadata.
 - `POST /v1/profiles/{profile_id}/enroll` — enroll uploaded reference images.
 - `GET /v1/visitors` — list newest visit records for review.
+- `POST /v1/demo/events` — owner-only sanitized fixture ingestion in local/test environments.
+- `GET /v1/visits` — shared multi-person history with state/profile/category/saved filters.
+- `POST /v1/visits/{visit_id}/people/{person_id}/reviews` — independent person review.
+- `GET/POST /v1/profile-proposals...` — member proposals and owner decisions.
+- `GET /v1/audit` — immutable household activity and profile modification history.
 
 Authentication for management routes is a required production hardening item; do not expose this
 proof of concept directly to the internet except behind a private tunnel/access layer.

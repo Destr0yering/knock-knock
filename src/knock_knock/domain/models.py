@@ -122,6 +122,17 @@ class RecognitionResult:
 
 
 @dataclass(frozen=True, slots=True)
+class FaceObservation:
+    key: str
+    bounding_box: BoundingBox | None
+    face_detected: bool
+    suggested_profile_id: str | None = None
+    similarity: float = 0.0
+    confidence_band: ConfidenceBand = ConfidenceBand.UNKNOWN
+    clip_frame_offsets_ms: tuple[int, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class Profile:
     id: str
     display_name: str

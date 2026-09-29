@@ -31,7 +31,7 @@
   Acceptance: Expired unsaved media is unavailable while its one-year text visit remains; saved media remains marked available; audit rows cannot be updated or deleted through service ports; removed members lose access but their historical actions remain; concurrent review versions fail safely.
   Verify: Run repository tests using a temporary directory/database and injected clock; assert that no service route or repository interface exposes profile/audit hard deletion; run the full Python suite.
 
-- [ ] **4. Deliver the deterministic local API workflow**
+- [x] **4. Deliver the deterministic local API workflow**
   Spec ref: `spec.md > API Contracts`, `spec.md > Data Flow > A. Ring event to shared alert`, `prd.md > Epic 2`, `prd.md > Epic 4`, `prd.md > Epic 7`
   What to build: Split FastAPI routers by concern, add safe error envelopes, pagination/filter contracts, demo fixture ingestion, household/member authorization fakes, per-person review, owner approval, media-save, profile, audit, and FCM-token contracts. Use a deterministic multi-face adapter and sanitized fixture manifest to complete simulator event -> three person cards -> review proposal -> approval -> history/audit locally.
   Acceptance: Duplicate event delivery creates one visit; one fixture produces three linked people; member correction produces a pending proposal; owner approval changes shared state and appends an audit event; filters return familiar, unknown, face-undetected, unresolved, and saved states; no API exposes secrets or raw private paths.

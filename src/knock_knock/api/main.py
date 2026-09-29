@@ -10,6 +10,12 @@ from uuid import UUID
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status
 
+from knock_knock.api.errors import register_error_handlers
+from knock_knock.api.routers.audit import router as audit_router
+from knock_knock.api.routers.demo import router as demo_router
+from knock_knock.api.routers.devices import router as devices_router
+from knock_knock.api.routers.profiles import router as profiles_router
+from knock_knock.api.routers.visits import router as visits_router
 from knock_knock.api.schemas import (
     EnrollmentResult,
     HealthResponse,
@@ -60,6 +66,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ),
         lifespan=lifespan,
     )
+    register_error_handlers(app)
+    app.include_router(demo_router)
+    app.include_router(visits_router)
+    app.include_router(profiles_router)
+    app.include_router(audit_router)
+    app.include_router(devices_router)
 
     @app.get("/health", response_model=HealthResponse)
     async def health(request: Request) -> HealthResponse:

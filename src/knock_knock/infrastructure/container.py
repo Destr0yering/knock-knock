@@ -16,13 +16,16 @@ from knock_knock.adapters.repositories.local import (
     JsonlVisitorRepository,
     YamlProfileRepository,
 )
+from knock_knock.adapters.repositories.shared_state import JsonHouseholdRepository
 from knock_knock.adapters.vision.aws_rekognition import AwsRekognitionFaceIdEngine
+from knock_knock.adapters.vision.deterministic import DeterministicMultiFaceEngine
 from knock_knock.adapters.vision.opencv import OpenCvLbphFaceIdEngine
 from knock_knock.adapters.vision.stub import UnknownFaceIdEngine
 from knock_knock.infrastructure.config import Settings
 from knock_knock.infrastructure.queue import InProcessEventQueue
 from knock_knock.ports.camera import CameraAdapter
 from knock_knock.ports.vision import FaceIdEngine
+from knock_knock.services.demo import DemoWorkflowService
 from knock_knock.services.pipeline import PipelineWorker, VisitorPipeline, VisitorReviewService
 from knock_knock.services.profiles import ProfileManager
 
@@ -38,6 +41,8 @@ class Container:
     queue: InProcessEventQueue
     profile_manager: ProfileManager
     visitor_reviews: VisitorReviewService
+    shared_data: JsonHouseholdRepository
+    demo_workflow: DemoWorkflowService
     worker: PipelineWorker
     http_client: httpx.AsyncClient | None = None
 
@@ -77,6 +82,7 @@ def build_container(settings: Settings) -> Container:
 
     profiles = YamlProfileRepository(settings.profile_config_path)
     visitors = JsonlVisitorRepository(settings.visitor_log_path)
+    shared_data = JsonHouseholdRepository(settings.shared_state_path)
     event_ledger = InMemoryEventLedger()
     queue = InProcessEventQueue()
     alerts = LoggingAlertPublisher()
@@ -91,6 +97,11 @@ def build_container(settings: Settings) -> Container:
         queue=queue,
         profile_manager=ProfileManager(profiles, vision),
         visitor_reviews=VisitorReviewService(visitors, profiles),
+        shared_data=shared_data,
+        demo_workflow=DemoWorkflowService(
+            shared_data,
+            DeterministicMultiFaceEngine(settings.fixture_manifest_path),
+        ),
         worker=PipelineWorker(queue, pipeline),
         http_client=http_client,
     )

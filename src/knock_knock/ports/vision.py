@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
-from knock_knock.domain.models import MediaFrame, RecognitionResult
+from knock_knock.domain.models import FaceObservation, MediaFrame, RecognitionResult
 
 
 class FaceIdEngine(ABC):
@@ -20,4 +20,12 @@ class FaceIdEngine(ABC):
     @abstractmethod
     async def remove_profile(self, profile_id: str) -> None:
         """Delete biometric references associated with a profile."""
+
+
+class MultiFaceEngine(ABC):
+    name: str
+
+    @abstractmethod
+    async def detect_fixture(self, fixture: str) -> list[FaceObservation]:
+        """Return one stable observation per person in a sanitized local fixture."""
 

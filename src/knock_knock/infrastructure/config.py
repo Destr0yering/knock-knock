@@ -20,6 +20,7 @@ class Settings(BaseSettings):
 
     camera_backend: Literal["ring", "simulator"] = "simulator"
     simulator_image_path: Path = Path("data/simulator/door.jpg")
+    fixture_manifest_path: Path = Path("fixtures/manifests/group-arrival.json")
 
     ring_api_base_url: str = "https://api.amazonvision.com"
     ring_oauth_token_url: str = "https://oauth.ring.com/oauth/token"
@@ -37,6 +38,7 @@ class Settings(BaseSettings):
 
     profile_config_path: Path = Path("config/known_faces.yaml")
     visitor_log_path: Path = Path("data/visitors.jsonl")
+    shared_state_path: Path = Path("data/household-state.json")
 
 
 @lru_cache

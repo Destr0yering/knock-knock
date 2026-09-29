@@ -90,3 +90,13 @@
 - Verified that member removal revokes active membership without erasing attributed audit history and that duplicate audit IDs cannot rewrite prior events.
 - Verification: 23 pytest tests passed, Ruff passed, and strict mypy passed across 34 source files.
 
+### Item 4 — Deliver the deterministic local API workflow
+
+- Added a swappable multi-face vision port and a deterministic adapter backed by a sanitized, media-free three-person fixture manifest.
+- Split the new FastAPI surface into demo, visits, profiles/proposals, audit, and device-token routers with safe service error envelopes and development-only fixture ingestion.
+- Added fake owner/member authorization with the same role policy as the planned Cognito path. A member can propose a familiar profile but receives `403 forbidden` when attempting approval; the owner can approve it.
+- Added independent person review, owner proposal decisions, state/profile/category/saved filtering with bounded offset pagination, media saving, familiar-profile queries, FCM token fingerprinting, and append-only audit retrieval.
+- Added `scripts/run_local_demo.py`, which executes fixture ingestion -> three person cards -> member proposal -> denied member approval -> owner approval -> saved media -> audit history without Ring or AWS credentials.
+- Concrete result: the fixture returned a generic `Visitor detected / 3 people detected` alert; person 1 was a high-confidence advisory suggestion, person 2 became an owner-approved `Taylor` profile, and person 3 remained explicitly `face_undetected`.
+- Verification: the required unit/contract/e2e subset passed 18 tests; the full suite passed 26 tests; Ruff passed; strict mypy passed across 45 source files; `/docs` returned 200; the local demo script completed successfully without exposing storage paths or raw device tokens.
+
