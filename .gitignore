@@ -1,0 +1,97 @@
+# Environment, credentials, and tokens
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+.aws/
+ring-token*.json
+oauth-token*.json
+
+# Local Knock Knock configuration and biometric data
+config/known_faces.yaml
+config/known_faces.yml
+data/*
+!data/README.md
+!data/.gitkeep
+models/*
+!models/README.md
+
+# Local hackathon/plugin state
+.devpost-hackathon-state.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+dist/
+build/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Runtime data
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.jsonl
+*.log
+logs/
+tmp/
+
+# Android / Gradle
+.gradle/
+local.properties
+*.iml
+**/build/
+captures/
+.cxx/
+.externalNativeBuild/
+*.apk
+*.aab
+
+# Java / Kotlin
+*.class
+out/
+
+# Node tooling (future dashboard/client tooling)
+node_modules/
+.npm/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary media and exports
+*.tmp
+*.temp
+*.bak
+exports/
+screenshots/private/
+
