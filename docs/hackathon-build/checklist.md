@@ -19,7 +19,7 @@
   Acceptance: The existing simulator webhook, profile, visitor, and adapter tests still pass; local startup requires no real Ring/AWS credentials; `.gitignore` excludes all documented secrets and private media; the selected adapter names appear in health output.
   Verify: Run `python -m ruff check .`, `python -m mypy src`, `python -m pytest`, and a FastAPI `GET /health` smoke test with simulator/stub settings.
 
-- [ ] **2. Implement the multi-person domain and trust policies**
+- [x] **2. Implement the multi-person domain and trust policies**
   Spec ref: `spec.md > Data Model`, `spec.md > AI Usage`, `spec.md > Components And Responsibilities > Review and learning services`
   What to build: Expand pure domain models for household, membership, visit, visit-person, profile proposal, media metadata, and audit events. Implement injected-clock policies for the 30-day learning period, confidence bands, generic-versus-qualified alert text, one-year visit visibility, fixed roles, and conflict suppression. Replace single-visitor assumptions without importing AWS, Ring, FastAPI, or Android into the domain.
   Acceptance: A three-person visit retains three independent review states; day 1 alerts never contain names; day 31 high-confidence results use `Possible match`; low confidence and disputed profiles remain generic; member profile changes require owner approval; age affirmation and fixed-retention rules are enforced.

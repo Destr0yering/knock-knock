@@ -74,3 +74,10 @@
 - Confirmed `.gitignore` excludes credentials, token files, biometric datasets, private media, runtime logs, databases, Android packages, and build outputs.
 - Environment note: verification ran on Python 3.14.6; the project remains compatible with its declared Python 3.12+ range. Third-party deprecation warnings were recorded but did not affect the clean baseline.
 
+### Item 2 — Implement the multi-person domain and trust policies
+
+- Added framework-independent household, membership, visit, visit-person, familiar-profile, proposal, media, and audit models while preserving the initial adapter contracts.
+- Added injected-time policy functions for the 30-day learning period, 30-day unsaved-photo expiry, one-year visit retention, confidence bands, generic versus qualified alerts, fixed owner/member permissions, and conflict suppression.
+- Verified independent review state for each person in a group visit, explicit face-undetected handling, owner approval requirements, and the age-13 affirmation gate.
+- Verification: 17 pytest tests passed, Ruff passed, and strict mypy passed across 33 source files.
+
