@@ -81,3 +81,12 @@
 - Verified independent review state for each person in a group visit, explicit face-undetected handling, owner approval requirements, and the age-13 affirmation gate.
 - Verification: 17 pytest tests passed, Ruff passed, and strict mypy passed across 33 source files.
 
+### Item 3 — Build append-only audit, retention, and local repositories
+
+- Added an atomic JSON metadata repository for households, memberships, visits, independently reviewed people, familiar profiles, approval proposals, media, device tokens, and immutable audit events.
+- Added optimistic version checks for concurrent visit, person-review, and proposal updates plus idempotent visit creation by Ring request ID.
+- Enforced the retention boundary in reads: unsaved photo metadata becomes unavailable at 30 days, saved media remains available, and the associated text visit remains visible for its one-year window.
+- Removed the legacy profile hard-delete route and changed the legacy repository boundary to reversible disabling; the shared repository exposes no profile, visit, or audit hard-delete method.
+- Verified that member removal revokes active membership without erasing attributed audit history and that duplicate audit IDs cannot rewrite prior events.
+- Verification: 23 pytest tests passed, Ruff passed, and strict mypy passed across 34 source files.
+

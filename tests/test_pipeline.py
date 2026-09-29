@@ -69,8 +69,18 @@ class MemoryProfiles(ProfileRepository):
         self.items[profile.id] = profile
         return profile
 
-    async def delete(self, profile_id: str) -> None:
-        self.items.pop(profile_id, None)
+    async def disable(self, profile_id: str) -> Profile:
+        profile = self.items[profile_id]
+        disabled = Profile(
+            id=profile.id,
+            display_name=profile.display_name,
+            category=profile.category,
+            notes=profile.notes,
+            enabled=False,
+            created_at=profile.created_at,
+        )
+        self.items[profile_id] = disabled
+        return disabled
 
 
 class MemoryVisitors(VisitorRepository):

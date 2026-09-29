@@ -228,6 +228,7 @@ class VisitPerson:
     reviewed_at: datetime | None = None
     crop_media_id: str | None = None
     clip_frame_offsets_ms: tuple[int, ...] = ()
+    version: int = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -242,6 +243,7 @@ class FamiliarProfile:
     created_by: str = ""
     created_at: datetime = field(default_factory=utc_now)
     updated_at: datetime = field(default_factory=utc_now)
+    version: int = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -260,6 +262,7 @@ class ProfileProposal:
     decided_by: str | None = None
     decided_at: datetime | None = None
     reason: str = ""
+    version: int = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -291,4 +294,16 @@ class MediaObject:
     retention: MediaRetention
     captured_at: datetime
     expires_at: datetime | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DeviceToken:
+    id: str
+    household_id: str
+    user_id: str
+    token_fingerprint: str
+    platform: str = "android"
+    active: bool = True
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
 

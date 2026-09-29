@@ -4,7 +4,7 @@ import asyncio
 import builtins
 import json
 from collections import deque
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -40,12 +40,14 @@ class YamlProfileRepository(ProfileRepository):
             await asyncio.to_thread(self._write, list(profiles.values()))
         return profile
 
-    async def delete(self, profile_id: str) -> None:
+    async def disable(self, profile_id: str) -> Profile:
         async with self._lock:
-            profiles = [
-                item for item in await asyncio.to_thread(self._read) if item.id != profile_id
-            ]
-            await asyncio.to_thread(self._write, profiles)
+            profiles = {item.id: item for item in await asyncio.to_thread(self._read)}
+            profile = profiles[profile_id]
+            disabled = replace(profile, enabled=False)
+            profiles[profile_id] = disabled
+            await asyncio.to_thread(self._write, list(profiles.values()))
+        return disabled
 
     def _read(self) -> builtins.list[Profile]:
         if not self._path.exists():

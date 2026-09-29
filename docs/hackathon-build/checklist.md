@@ -25,7 +25,7 @@
   Acceptance: A three-person visit retains three independent review states; day 1 alerts never contain names; day 31 high-confidence results use `Possible match`; low confidence and disputed profiles remain generic; member profile changes require owner approval; age affirmation and fixed-retention rules are enforced.
   Verify: Run focused unit tests for policy boundary dates, threshold edges, role matrix, face-undetected outcomes, multi-person grouping, and conflicting edits, then run the full Python suite.
 
-- [ ] **3. Build append-only audit, retention, and local repositories**
+- [x] **3. Build append-only audit, retention, and local repositories**
   Spec ref: `spec.md > DynamoDB Access Plan`, `spec.md > Data Flow > C. Retention`, `spec.md > Components And Responsibilities > Audit repository`
   What to build: Extend repository ports and local adapters for households, memberships, visits, people, profiles, proposals, media, device tokens, event ledger, and append-only audit history. Implement optimistic versions, one-year query filtering, 30-day unsaved-media metadata, saved-media state, and immutable audit interfaces. Remove or suppress hard-delete behavior that conflicts with the approved MVP.
   Acceptance: Expired unsaved media is unavailable while its one-year text visit remains; saved media remains marked available; audit rows cannot be updated or deleted through service ports; removed members lose access but their historical actions remain; concurrent review versions fail safely.

@@ -149,13 +149,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="Profile not found") from exc
         return EnrollmentResult(profile_id=str(profile_id), accepted_images=accepted)
 
-    @app.delete("/v1/profiles/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
-    async def delete_profile(request: Request, profile_id: UUID) -> None:
-        try:
-            await _container(request).profile_manager.delete(str(profile_id))
-        except ProfileNotFoundError as exc:
-            raise HTTPException(status_code=404, detail="Profile not found") from exc
-
     @app.get("/v1/visitors", response_model=list[VisitorView])
     async def list_visitors(request: Request, limit: int = 100) -> list[VisitorView]:
         safe_limit = max(1, min(limit, 500))

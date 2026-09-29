@@ -39,9 +39,9 @@ class ProfileManager:
             raise ProfileNotFoundError(profile_id)
         return await self._vision.enroll(profile_id, frames)
 
-    async def delete(self, profile_id: str) -> None:
+    async def disable(self, profile_id: str) -> Profile:
         if await self._profiles.get(profile_id) is None:
             raise ProfileNotFoundError(profile_id)
         await self._vision.remove_profile(profile_id)
-        await self._profiles.delete(profile_id)
+        return await self._profiles.disable(profile_id)
 
