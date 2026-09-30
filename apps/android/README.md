@@ -1,10 +1,18 @@
-# Knock Knock Android client
+# Knock Knock Android
 
-The Android application is a presentation client for the backend API. It will display the live
-visitor inbox, ask the user to confirm or correct suggested identities, enroll profiles, and show
-visit history. It must not contain Ring client secrets, HMAC keys, AWS credentials, or biometric
-templates. Those stay behind the backend ports defined in `src/knock_knock/ports/`.
+Native Kotlin/Jetpack Compose client for the Knock Knock household visitor workflow.
 
-The initial repository focuses on the testable service boundary. A Kotlin/Jetpack Compose client
-can be added here once the API contracts are accepted.
+## Local build
+
+```powershell
+cd apps\android
+.\gradlew.bat lintDebug testDebugUnitTest assembleDebug
+```
+
+The debug build defaults to the Android emulator loopback address (`10.0.2.2:8000`) and uses
+the local demo session. It contains no Ring, AWS, Rekognition, Cognito, or FCM credentials.
+
+Modules are intentionally separated into app assembly, core model/network/database/UI, and
+feature packages so production Cognito and AWS adapters can replace the demo boundaries without
+rewriting screens.
 

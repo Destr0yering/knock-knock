@@ -100,3 +100,12 @@
 - Concrete result: the fixture returned a generic `Visitor detected / 3 people detected` alert; person 1 was a high-confidence advisory suggestion, person 2 became an owner-approved `Taylor` profile, and person 3 remained explicitly `face_undetected`.
 - Verification: the required unit/contract/e2e subset passed 18 tests; the full suite passed 26 tests; Ruff passed; strict mypy passed across 45 source files; `/docs` returned 200; the local demo script completed successfully without exposing storage paths or raw device tokens.
 
+### Item 5 — Create the native Android foundation and offline timeline
+
+- Generated a native multi-module Kotlin/Jetpack Compose application with `app`, `core:model`, `core:network`, `core:database`, `core:ui`, and `feature:timeline` boundaries.
+- Added a Material 3 visual identity, Compose navigation, manual dependency injection, a Cognito-compatible session boundary, Retrofit/OkHttp networking with redacted authentication headers, Room persistence, and WorkManager refresh scheduling.
+- Added an explicit 30-day learning-mode explanation, generic-alert language, offline status, searchable filter chips, an empty-state demo action, and visit cards that show person count, review status, saved-photo state, possible matches, and the expired-photo/retained-log boundary.
+- The sanitized three-person offline fixture persists in Room and remains available when the local FastAPI service is unreachable; no Ring or AWS service credentials are stored on the device.
+- Visual verification on the `Pixel_5` Google APIs emulator covered the empty state, loaded offline fixture, `Unknown` filter, multi-person summary, and expired-photo placeholder.
+- Verification: `lintDebug`, `testDebugUnitTest`, and `assembleDebug` completed successfully (286 Gradle tasks); the debug APK installed and launched successfully on the emulator.
+

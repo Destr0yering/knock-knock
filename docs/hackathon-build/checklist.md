@@ -37,7 +37,7 @@
   Acceptance: Duplicate event delivery creates one visit; one fixture produces three linked people; member correction produces a pending proposal; owner approval changes shared state and appends an audit event; filters return familiar, unknown, face-undetected, unresolved, and saved states; no API exposes secrets or raw private paths.
   Verify: Run `python -m pytest tests/unit tests/contract tests/e2e`; open `/docs`; execute the scripted local demo flow and inspect its JSON responses. **Checkpoint:** show Thomas the local API workflow summary and one concrete three-person visit result before continuing.
 
-- [ ] **5. Create the native Android foundation and offline timeline**
+- [x] **5. Create the native Android foundation and offline timeline**
   Spec ref: `spec.md > Decisions > Client`, `spec.md > File Structure`, `spec.md > Components And Responsibilities > Android application`
   What to build: Generate the Kotlin/Jetpack Compose Android project and the specified core/feature module boundaries at a practical MVP granularity. Add Material 3 theme, navigation, dependency injection, Retrofit client, Cognito-compatible session abstraction, Room cache, repository layer, learning-period banner, timeline, filters, empty/offline/error states, and fixture/local API configuration. Keep all Ring and AWS service credentials off-device.
   Acceptance: The app launches on a Google APIs emulator; a new household sees the learning explanation and demo action; fixture visits persist across restart in Room; the timeline shows person count, labels, verification state, media availability, and photo-expired placeholder; offline mode is visibly labeled.
