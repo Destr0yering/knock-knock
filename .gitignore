@@ -36,6 +36,8 @@ ENV/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.tools/
+.aws-sam/
 .coverage
 .coverage.*
 htmlcov/

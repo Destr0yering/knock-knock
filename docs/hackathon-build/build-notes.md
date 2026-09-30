@@ -139,3 +139,17 @@
 - Verification: the full backend suite passed 41 tests; Ruff passed; strict mypy passed across 45
   source files; `git diff --check` passed.
 
+### Item 8 — AWS serverless stack (local gate complete, deployment pending)
+
+- Added a SAM stack for HTTP API, FastAPI/Mangum Lambda, SQS/DLQ, an image-based worker Lambda,
+  on-demand DynamoDB tables with TTL, private SSE-KMS S3 with fixed tagged lifecycle expiration,
+  Cognito, Secrets Manager, short-retention logs, alarms, and separate least-privilege API/worker
+  roles. No NAT Gateway or always-on service is present.
+- Added a Python 3.12 Lambda API image, worker image/partial-batch entrypoint, bounded concurrency,
+  example SAM configuration, cost-aware deployment/teardown runbook, and structural policy tests.
+- `sam validate --lint` reports a valid template. `sam build` built both images, and
+  `sam local start-api` returned HTTP 200 from `/health` with
+  `ring-partner-api` and `aws-rekognition` selected.
+- Deployment is pending: the read-only STS identity check could not locate CLI credentials, so the
+  active AWS account/region could not be verified and no cloud resources were created.
+

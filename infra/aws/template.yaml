@@ -1,0 +1,578 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Knock Knock hackathon development stack
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedPattern: "^[a-z][a-z0-9-]{1,15}$"
+  AllowedOrigin:
+    Type: String
+    Default: "https://localhost.invalid"
+  LogRetentionDays:
+    Type: Number
+    Default: 14
+    AllowedValues: [7, 14, 30]
+  PhotoRetentionDays:
+    Type: Number
+    Default: 30
+    AllowedValues: [30]
+  VisitRetentionDays:
+    Type: Number
+    Default: 365
+    AllowedValues: [365]
+
+Globals:
+  Function:
+    Architectures: [x86_64]
+    Tracing: Active
+    Environment:
+      Variables:
+        KNOCK_KNOCK_ENVIRONMENT: !Ref Environment
+        KNOCK_KNOCK_CAMERA_BACKEND: ring
+        KNOCK_KNOCK_VISION_BACKEND: aws
+        KNOCK_KNOCK_AWS_REGION: !Ref AWS::Region
+        KNOCK_KNOCK_VISIT_TABLE: !Ref VisitTable
+        KNOCK_KNOCK_HOUSEHOLD_TABLE: !Ref HouseholdTable
+        KNOCK_KNOCK_EVENT_LEDGER_TABLE: !Ref EventLedgerTable
+        KNOCK_KNOCK_MEDIA_BUCKET: !Ref MediaBucket
+        KNOCK_KNOCK_EVENT_QUEUE_URL: !Ref EventQueue
+        KNOCK_KNOCK_RING_SECRET_ARN: !Ref RingCredentialsSecret
+        KNOCK_KNOCK_FIREBASE_SECRET_ARN: !Ref FirebaseCredentialsSecret
+
+Resources:
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Environment
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowHeaders:
+          - Authorization
+          - Content-Type
+          - X-Signature
+        AllowMethods:
+          - GET
+          - POST
+          - PATCH
+          - OPTIONS
+        MaxAge: 300
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            IdentitySource: "$request.header.Authorization"
+            JwtConfiguration:
+              issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}"
+              audience:
+                - !Ref UserPoolClient
+      AccessLogSettings:
+        DestinationArn: !GetAtt HttpApiAccessLogGroup.Arn
+        Format: >-
+          {"requestId":"$context.requestId","routeKey":"$context.routeKey",
+          "status":"$context.status","responseLatency":"$context.responseLatency"}
+
+  HttpApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: !Sub "/aws/http-api/knock-knock-${Environment}"
+      RetentionInDays: !Ref LogRetentionDays
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerContext: ../..
+      Dockerfile: infra/aws/api.Dockerfile
+      DockerTag: python3.12-v1
+    Properties:
+      FunctionName: !Sub "knock-knock-${Environment}-api"
+      PackageType: Image
+      MemorySize: 768
+      Timeout: 15
+      ReservedConcurrentExecutions: 5
+      Role: !GetAtt ApiExecutionRole.Arn
+      Events:
+        Health:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /health
+            Method: GET
+            Auth:
+              Authorizer: NONE
+        RingWebhook:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /v1/webhooks/ring
+            Method: POST
+            Auth:
+              Authorizer: NONE
+        RingOAuthCallback:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /v1/ring/oauth/callback
+            Method: GET
+            Auth:
+              Authorizer: NONE
+        ApiProxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /v1/{proxy+}
+            Method: ANY
+
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/knock-knock-${Environment}-api"
+      RetentionInDays: !Ref LogRetentionDays
+
+  WorkerFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      DockerContext: ../..
+      Dockerfile: infra/aws/worker.Dockerfile
+      DockerTag: python3.12-v1
+    Properties:
+      FunctionName: !Sub "knock-knock-${Environment}-worker"
+      PackageType: Image
+      MemorySize: 2048
+      Timeout: 60
+      EphemeralStorage:
+        Size: 1024
+      ReservedConcurrentExecutions: 2
+      Role: !GetAtt WorkerExecutionRole.Arn
+      Events:
+        RingEvents:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt EventQueue.Arn
+            BatchSize: 5
+            MaximumBatchingWindowInSeconds: 2
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+
+  WorkerLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/knock-knock-${Environment}-worker"
+      RetentionInDays: !Ref LogRetentionDays
+
+  EventQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "knock-knock-${Environment}-events"
+      KmsMasterKeyId: alias/aws/sqs
+      VisibilityTimeout: 360
+      MessageRetentionPeriod: 345600
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  DeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "knock-knock-${Environment}-events-dlq"
+      KmsMasterKeyId: alias/aws/sqs
+      MessageRetentionPeriod: 1209600
+
+  MediaBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+            BucketKeyEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireTemporaryPhotos
+            Status: Enabled
+            TagFilters:
+              - Key: retention
+                Value: 30d
+            ExpirationInDays: !Ref PhotoRetentionDays
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 7
+          - Id: AbortIncompleteUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+
+  MediaBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MediaBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt MediaBucket.Arn
+              - !Sub "${MediaBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
+  HouseholdTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "knock-knock-${Environment}-households"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: household_id
+          AttributeType: S
+        - AttributeName: ring_account_subject
+          AttributeType: S
+      KeySchema:
+        - AttributeName: household_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ring-account-index
+          KeySchema:
+            - AttributeName: ring_account_subject
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+
+  VisitTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "knock-knock-${Environment}-visits"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: household_id
+          AttributeType: S
+        - AttributeName: sort_key
+          AttributeType: S
+        - AttributeName: ring_request_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: household_id
+          KeyType: HASH
+        - AttributeName: sort_key
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: ring-request-index
+          KeySchema:
+            - AttributeName: ring_request_id
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+
+  EventLedgerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "knock-knock-${Environment}-event-ledger"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: request_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: request_id
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "knock-knock-${Environment}"
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      DeletionProtection: INACTIVE
+      MfaConfiguration: OPTIONAL
+      EnabledMfas:
+        - SOFTWARE_TOKEN_MFA
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+          TemporaryPasswordValidityDays: 3
+      UserAttributeUpdateSettings:
+        AttributesRequireVerificationBeforeUpdate:
+          - email
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub "knock-knock-${Environment}-android"
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      EnableTokenRevocation: true
+      PreventUserExistenceErrors: ENABLED
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+  RingCredentialsSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "knock-knock/${Environment}/ring"
+      Description: Ring OAuth client, HMAC, and encrypted per-household token material
+      KmsKeyId: alias/aws/secretsmanager
+      Tags:
+        - Key: Project
+          Value: KnockKnock
+
+  FirebaseCredentialsSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "knock-knock/${Environment}/firebase"
+      Description: Firebase Cloud Messaging server credentials
+      KmsKeyId: alias/aws/secretsmanager
+      Tags:
+        - Key: Project
+          Value: KnockKnock
+
+  ApiExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: ApiLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "${ApiLogGroup.Arn}:*"
+        - PolicyName: ApiData
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt HouseholdTable.Arn
+                  - !Sub "${HouseholdTable.Arn}/index/ring-account-index"
+                  - !GetAtt VisitTable.Arn
+                  - !Sub "${VisitTable.Arn}/index/ring-request-index"
+                  - !GetAtt EventLedgerTable.Arn
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !GetAtt EventQueue.Arn
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref RingCredentialsSecret
+
+  WorkerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: WorkerLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "${WorkerLogGroup.Arn}:*"
+        - PolicyName: WorkerQueue
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ChangeMessageVisibility
+                Resource: !GetAtt EventQueue.Arn
+        - PolicyName: WorkerData
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt HouseholdTable.Arn
+                  - !Sub "${HouseholdTable.Arn}/index/ring-account-index"
+                  - !GetAtt VisitTable.Arn
+                  - !Sub "${VisitTable.Arn}/index/ring-request-index"
+                  - !GetAtt EventLedgerTable.Arn
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !GetAtt MediaBucket.Arn
+                Condition:
+                  StringLike:
+                    s3:prefix:
+                      - "households/*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:PutObjectTagging
+                Resource: !Sub "${MediaBucket.Arn}/households/*"
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Ref RingCredentialsSecret
+                  - !Ref FirebaseCredentialsSecret
+
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "knock-knock-${Environment}-alarms"
+      KmsMasterKeyId: alias/aws/sns
+
+  DeadLetterAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "knock-knock-${Environment}-dlq-not-empty"
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt DeadLetterQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  ApiErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "knock-knock-${Environment}-api-errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ApiFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  WorkerErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "knock-knock-${Environment}-worker-errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref WorkerFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+Outputs:
+  ApiBaseUrl:
+    Description: Public HTTP API base URL
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Environment}"
+  MediaBucketName:
+    Value: !Ref MediaBucket
+  UserPoolId:
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Value: !Ref UserPoolClient
+  RingSecretArn:
+    Value: !Ref RingCredentialsSecret
+  FirebaseSecretArn:
+    Value: !Ref FirebaseCredentialsSecret
+  EventQueueUrl:
+    Value: !Ref EventQueue
+  DeadLetterQueueUrl:
+    Value: !Ref DeadLetterQueue

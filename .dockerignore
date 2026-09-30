@@ -1,0 +1,8 @@
+*
+!pyproject.toml
+!README.md
+!src/
+!src/**
+!infra/
+!infra/aws/
+!infra/aws/*.Dockerfile

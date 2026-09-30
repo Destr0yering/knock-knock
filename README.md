@@ -88,6 +88,10 @@ python -m mypy src
 python -m pytest
 ```
 
+The AWS development stack lives in `infra/aws/template.yaml`. Its runbook covers local SAM
+validation/build, identity checks, first deployment, smoke testing, and teardown. Deployment is
+intentionally separate from local setup because it creates metered AWS resources.
+
 ## Ring authentication and webhooks
 
 Knock Knock targets the **official Ring Partner API** rather than asking a user for a Ring password.

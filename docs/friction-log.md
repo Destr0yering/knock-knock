@@ -19,3 +19,16 @@ This log records concrete, non-secret integration issues for the hackathon feedb
   Therefore the official sanitized v1.1 replay contract is verified locally, while live
   Playground/staging evidence remains pending. The architecture and production API path are
   unchanged.
+
+## AWS SAM — 2026-09-29
+
+- Neither AWS CLI nor SAM CLI was initially installed even though the AWS web console was signed in.
+  A project-local SAM CLI environment was added under the ignored `.tools/` directory.
+- The first image build failed because the Docker SDK walked stale Android Gradle intermediates in
+  the repository-wide build context. A strict `.dockerignore` reduced the context to the Python
+  package, project metadata, and Lambda Dockerfiles; both images then built successfully.
+- Docker Desktop was installed but not running. Starting it enabled a full SAM build and local
+  FastAPI/Mangum health smoke test.
+- Current external blocker: the browser session does not supply CLI credentials. A read-only STS
+  identity check returned `NoCredentialsError`, so no CloudFormation deployment or billable AWS
+  mutation was attempted. The active account and region must be authenticated and confirmed first.
