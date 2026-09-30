@@ -207,3 +207,8 @@ If `git init` created `master` on an older Git version, run `git branch -M main`
 5. Never attach real Ring media, face datasets, tokens, logs, or `.env` files to issues or commits.
 6. Describe privacy impact, migration needs, and manual verification steps in the pull request.
 
+## License
+
+Knock Knock is available under the [MIT License](LICENSE). This license covers the software only;
+it does not grant rights to Ring/Amazon trademarks, third-party media, or biometric data.
+

@@ -48,3 +48,7 @@ This log records concrete, non-secret integration issues for the hackathon feedb
 - The local infrastructure gate remains reproducible and green. Live deployment, output inspection,
   billing/free-tier inspection, and health smoke testing are deferred to the existing item 10
   end-to-end checkpoint after AWS finishes account activation.
+- After the payment method was updated, `aws account get-account-information` still returned
+  `AccountState: PENDING_ACTIVATION`, while STS authentication continued to work. Exposing that
+  state prominently in the AWS console and linking it from the `OptInRequired` error would prevent
+  developers from misdiagnosing activation latency as an IAM, CLI, or CloudFormation problem.
