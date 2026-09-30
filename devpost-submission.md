@@ -166,7 +166,7 @@ For the full instrumented gate, start a Google APIs emulator and run:
 
 ### AWS infrastructure
 
-Follow `docs/aws-deployment-runbook.md` to validate/build the SAM stack, confirm identity and region, deploy only after authorization, inspect outputs, smoke-test `/health`, and tear the development stack down.
+Follow `infra/aws/README.md` to validate/build the SAM stack, confirm identity and region, deploy only after authorization, inspect outputs, smoke-test `/health`, and tear the development stack down.
 
 ## Public Demo Link
 
@@ -236,6 +236,13 @@ Implemented and verified locally:
 - Multi-face Rekognition adapter/service, bounded OpenCV worker image, S3 persistence, owner-approved learning, SQS partial failures
 - Cognito claim boundary, household role enforcement, age affirmation, access revocation, and FCM HTTP v1 payload behavior
 - Python, Android, SAM, Docker, and emulator verification recorded in `docs/hackathon-build/build-notes.md`
+
+Fresh verification on September 30, 2026:
+
+- Backend: 60 pytest tests passed
+- Quality gates: Ruff passed and strict mypy passed across 57 source files
+- Android: `lintDebug`, `testDebugUnitTest`, and `assembleDebug` completed successfully (334 Gradle tasks)
+- Debug APK: `apps/android/app/build/outputs/apk/debug/app-debug.apk` (19,159,620 bytes)
 
 Still required before final submission:
 
