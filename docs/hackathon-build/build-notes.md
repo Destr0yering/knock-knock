@@ -139,7 +139,7 @@
 - Verification: the full backend suite passed 41 tests; Ruff passed; strict mypy passed across 45
   source files; `git diff --check` passed.
 
-### Item 8 — AWS serverless stack (local gate complete, deployment pending)
+### Item 8 — AWS serverless stack (local gate complete; live gate deferred)
 
 - Added a SAM stack for HTTP API, FastAPI/Mangum Lambda, SQS/DLQ, an image-based worker Lambda,
   on-demand DynamoDB tables with TTL, private SSE-KMS S3 with fixed tagged lifecycle expiration,
@@ -150,6 +150,17 @@
 - `sam validate --lint` reports a valid template. `sam build` built both images, and
   `sam local start-api` returned HTTP 200 from `/health` with
   `ring-partner-api` and `aws-rekognition` selected.
-- Deployment is pending: the read-only STS identity check could not locate CLI credentials, so the
-  active AWS account/region could not be verified and no cloud resources were created.
+- Installed a verified Amazon-signed AWS CLI v2.37.6 into the ignored project tool area and used
+  AWS browser login with short-lived credentials. STS confirmed account `737272118136`, root
+  identity, and the intended `us-east-1` deployment region before the authorized cloud attempt.
+- Rebuilt both Lambda images successfully after starting Docker Desktop's existing Windows/WSL2
+  services. The packaged artifacts remain under ignored `.tools/` paths.
+- The authorized `sam deploy` stopped during SAM's managed-resource bootstrap with AWS
+  `OptInRequired: The AWS Access Key Id needs a subscription for the service`. CloudFormation also
+  rejected a read-only stack listing with the same account-activation error, so the Knock Knock
+  application stack was not created and no live endpoint exists yet.
+- Thomas approved the fallback: close item 8 on its validated local infrastructure gate and move
+  live deployment, CloudFormation output inspection, billing/free-tier inspection, and smoke testing
+  into item 10's existing end-to-end checkpoint. This preserves the architecture and avoids blocking
+  independent Rekognition worker development while AWS billing activation completes.
 

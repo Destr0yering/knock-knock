@@ -32,3 +32,19 @@ This log records concrete, non-secret integration issues for the hackathon feedb
 - Current external blocker: the browser session does not supply CLI credentials. A read-only STS
   identity check returned `NoCredentialsError`, so no CloudFormation deployment or billable AWS
   mutation was attempted. The active account and region must be authenticated and confirmed first.
+
+## AWS account activation — 2026-09-30
+
+- A verified Amazon-signed AWS CLI v2.37.6 administrative extraction provided a project-local CLI
+  after the system-wide MSI required administrator access.
+- AWS browser login produced short-lived credentials and STS verified account `737272118136` before
+  deployment. No long-lived access key was created.
+- After explicit deployment approval, SAM rebuilt both Lambda images and attempted its managed
+  resource bootstrap in `us-east-1`. AWS rejected `CreateChangeSet` with `OptInRequired: The AWS
+  Access Key Id needs a subscription for the service`.
+- A subsequent read-only CloudFormation `ListStacks` call returned the same `OptInRequired` error.
+  This indicates account/billing activation rather than a SAM template or IAM-policy failure. No
+  Knock Knock application stack or live endpoint was created.
+- The local infrastructure gate remains reproducible and green. Live deployment, output inspection,
+  billing/free-tier inspection, and health smoke testing are deferred to the existing item 10
+  end-to-end checkpoint after AWS finishes account activation.
