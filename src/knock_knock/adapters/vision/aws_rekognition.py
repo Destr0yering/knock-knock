@@ -4,21 +4,35 @@ import asyncio
 from collections.abc import Sequence
 from typing import Any
 
-from knock_knock.domain.models import MediaFrame, RecognitionResult
-from knock_knock.ports.vision import FaceIdEngine
+from knock_knock.domain.models import BoundingBox, MediaFrame, RecognitionResult
+from knock_knock.ports.vision import DetectedFace, FaceDetector, FaceIdEngine, SampledFrame
 
 
-class AwsRekognitionFaceIdEngine(FaceIdEngine):
+class AwsRekognitionFaceIdEngine(FaceIdEngine, FaceDetector):
     name = "aws-rekognition"
 
-    def __init__(self, region: str, collection_id: str, match_threshold: float) -> None:
-        try:
-            import boto3
-        except ImportError as exc:
-            raise RuntimeError("AWS backend requires: pip install -e '.[aws]'") from exc
-        self._client: Any = boto3.client("rekognition", region_name=region)
+    def __init__(
+        self,
+        region: str,
+        collection_id: str,
+        match_threshold: float,
+        *,
+        client: Any | None = None,
+        minimum_quality: float = 0.45,
+    ) -> None:
+        if client is None:
+            try:
+                import boto3
+            except ImportError as exc:
+                raise RuntimeError("AWS backend requires: pip install -e '.[aws]'") from exc
+            client = boto3.client("rekognition", region_name=region)
+        self._client = client
         self._collection_id = collection_id
         self._match_threshold = match_threshold
+        self._minimum_quality = minimum_quality
+
+    async def detect(self, frame: SampledFrame) -> list[DetectedFace]:
+        return await asyncio.to_thread(self._detect_sync, frame.content)
 
     async def identify(self, frame: MediaFrame) -> RecognitionResult:
         return await asyncio.to_thread(self._identify_sync, frame.content)
@@ -53,6 +67,33 @@ class AwsRekognitionFaceIdEngine(FaceIdEngine):
             face_detected=True,
             diagnostics={"face_id": match.get("Face", {}).get("FaceId")},
         )
+
+    def _detect_sync(self, content: bytes) -> list[DetectedFace]:
+        response = self._client.detect_faces(
+            Image={"Bytes": content},
+            Attributes=["DEFAULT"],
+        )
+        detected: list[DetectedFace] = []
+        for detail in response.get("FaceDetails", []):
+            box = detail.get("BoundingBox", {})
+            quality = detail.get("Quality", {})
+            pose = detail.get("Pose", {})
+            face = DetectedFace(
+                bounding_box=BoundingBox(
+                    left=float(box.get("Left", 0.0)),
+                    top=float(box.get("Top", 0.0)),
+                    width=float(box.get("Width", 0.0)),
+                    height=float(box.get("Height", 0.0)),
+                ),
+                confidence=float(detail.get("Confidence", 0.0)) / 100.0,
+                brightness=float(quality.get("Brightness", 0.0)),
+                sharpness=float(quality.get("Sharpness", 0.0)),
+                yaw=float(pose.get("Yaw", 0.0)),
+                pitch=float(pose.get("Pitch", 0.0)),
+            )
+            if face.quality_score >= self._minimum_quality:
+                detected.append(face)
+        return sorted(detected, key=lambda item: item.bounding_box.left)
 
     def _enroll_sync(self, profile_id: str, frames: Sequence[bytes]) -> int:
         accepted = 0

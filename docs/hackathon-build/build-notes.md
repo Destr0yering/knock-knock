@@ -164,3 +164,28 @@
   into item 10's existing end-to-end checkpoint. This preserves the architecture and avoids blocking
   independent Rekognition worker development while AWS billing activation completes.
 
+### Item 9 — Multi-face Rekognition worker and learning loop
+
+- Added bounded OpenCV image/video frame sampling and normalized per-face cropping to the worker
+  image. The worker limits frames, faces per frame, crops per person, clip bytes, and adjacent-frame
+  tracking work so a long or crowded Ring clip cannot create unbounded processing.
+- Extended the swappable vision boundary with face detection, frame sampling, and cropping ports.
+  The AWS adapter now calls `DetectFaces` for each sampled frame and `SearchFacesByImage` only on an
+  individual crop, avoiding Rekognition's largest-face behavior on group images.
+- Added cross-frame person tracking, duplicate-crop suppression, per-person evidence aggregation,
+  quality thresholds, confidence bands, disputed-match suppression, and stable independent person
+  results for a synthetic three-person visit.
+- Added encrypted, household-scoped S3 media loading and 30-day tagged crop persistence. Added an
+  owner-approval learning service that deduplicates examples, calls `IndexFaces`, increments profile
+  versions, and places conflicting profiles under review instead of silently relearning them.
+- Upgraded the SQS entrypoint to isolate records and return Lambda partial batch failures, preserving
+  failed messages for retry and the existing DLQ/alarm path. Failure logs include the SQS message ID
+  but no media bytes, credential values, or face images.
+- Verification: AWS adapters passed against stub clients; the worker and learning tests covered three
+  people, low-confidence/suppressed identity behavior, approved enrollment, conflicts, encrypted S3
+  persistence, bounded work, and partial batch failures. The full backend suite passed 55 tests; Ruff passed; strict
+  mypy passed across 53 source files; `git diff --check` passed; and SAM rebuilt both Lambda images,
+  including the worker's boto3, NumPy, and headless OpenCV dependencies.
+- The one live Rekognition invocation and CloudWatch log inspection remain combined with item 10's
+  deployment checkpoint because AWS account service activation is still the known external gate.
+

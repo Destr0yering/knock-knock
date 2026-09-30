@@ -1,0 +1,1 @@
+"""Encrypted media persistence adapters."""
