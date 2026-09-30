@@ -189,3 +189,22 @@
 - The one live Rekognition invocation and CloudWatch log inspection remain combined with item 10's
   deployment checkpoint because AWS account service activation is still the known external gate.
 
+### Item 10 — Cloud access and notifications (in progress; activation blocked)
+
+- Added an API Gateway/Cognito identity adapter that accepts only claims already validated by the
+  configured JWT authorizer and refuses caller-supplied headers as an identity source.
+- Added server-side household authorization for active membership, sole-owner operations,
+  invitation acceptance with a mandatory age-13 affirmation, member removal, and immediate access
+  revocation without deleting historical records.
+- Added an FCM HTTP v1 adapter with short-lived OAuth bearer injection, duplicate-token suppression,
+  safe text/data payloads, visit deep links, and explicit retryable delivery failures so a failed
+  push cannot be mistaken for a lost visit.
+- Focused tests pass for validated Cognito claims, the owner/member authorization matrix, age
+  affirmation, removal revocation, safe FCM payloads, and transient FCM failures. Ruff and strict
+  mypy also pass for this increment.
+- Refreshed AWS browser authentication successfully for account `737272118136` and installed the
+  user-approved AWS skills/MCP configuration. STS succeeds, but CloudFormation still returns
+  `OptInRequired: The AWS Access Key Id needs a subscription for the service`. Item 10 remains
+  unchecked until AWS billing/service activation permits deployment, Cognito test users, a real
+  FCM alert, CloudWatch inspection, and the participant checkpoint.
+
