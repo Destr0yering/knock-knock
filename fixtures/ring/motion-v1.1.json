@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "version": "1.1",
+    "time": "2026-08-14T12:53:16.787Z",
+    "request_id": "00000000-0000-4000-8000-000000000001",
+    "account_id": "ava1.ring.account.SANITIZED"
+  },
+  "data": {
+    "id": "ava1.ring.device.SANITIZED_motion_1786715596787",
+    "type": "motion_detected",
+    "attributes": {
+      "source": "ava1.ring.device.SANITIZED",
+      "source_type": "devices",
+      "timestamp": 1786715596787,
+      "timestamp_readable": "2026-08-14 08:53:16",
+      "sub_type": "human",
+      "component_ids": [
+        "0"
+      ]
+    },
+    "relationships": {
+      "devices": {
+        "links": {
+          "self": "/v1/devices/ava1.ring.device.SANITIZED"
+        }
+      }
+    }
+  }
+}

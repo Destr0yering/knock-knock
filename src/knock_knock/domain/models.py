@@ -97,6 +97,18 @@ class MediaFrame:
 
 
 @dataclass(frozen=True, slots=True)
+class MediaClip:
+    content: bytes
+    content_type: str
+    captured_at: datetime
+    source_event_id: str
+    device_id: str
+    requested_duration_ms: int
+    actual_duration_ms: int | None = None
+    partial: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class RecognitionResult:
     profile_id: str | None
     confidence: float

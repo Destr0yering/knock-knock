@@ -19,6 +19,22 @@ class CameraMediaError(CameraAdapterError):
     """Media could not be fetched for an otherwise valid event."""
 
 
+class CameraAuthenticationError(CameraAdapterError):
+    """The camera provider rejected or could not refresh account credentials."""
+
+
+class CameraRateLimitError(CameraAdapterError):
+    """The camera provider exhausted bounded retries after rate limiting."""
+
+    def __init__(self, message: str, *, retry_after_seconds: float | None = None) -> None:
+        super().__init__(message)
+        self.retry_after_seconds = retry_after_seconds
+
+
+class CameraMediaUnavailableError(CameraMediaError):
+    """Requested media is not present, not ready, or outside the available range."""
+
+
 class CameraAdapter(ABC):
     name: str
 

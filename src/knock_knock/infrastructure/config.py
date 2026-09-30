@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     ring_client_secret: SecretStr = SecretStr("")
     ring_hmac_signing_key: SecretStr = SecretStr("")
     ring_access_token: SecretStr = SecretStr("")
+    ring_refresh_token: SecretStr = SecretStr("")
+    ring_account_id: str = ""
 
     vision_backend: Literal["opencv", "aws", "stub"] = "stub"
     face_match_threshold: float = Field(default=0.62, ge=0.0, le=1.0)

@@ -119,3 +119,23 @@
 - Manual emulator walkthrough: opened the three-person visit from a deep link, submitted `Alex` as a member, observed the member approval restriction, switched to Ring owner, approved the proposal, verified proposer/decision-maker audit entries, generated `Visitor detected / 3 people detected`, and tapped the notification back into the correct visit.
 - Verification: the combined `lintDebug`, `testDebugUnitTest`, `assembleDebug`, and `connectedDebugAndroidTest` gate passed 516 Gradle tasks, including the Room migration and Compose UI tests on the Pixel 5 Google APIs emulator.
 
+### Item 7 — Complete and validate the official Ring integration
+
+- Added a per-account OAuth token-store boundary, refresh-token rotation, expiry/skew handling, and
+  typed authentication/rate-limit failures. The local in-memory implementation is explicitly
+  development-only; the AWS checkpoint will supply encrypted persistent storage.
+- Completed official snapshot and historical-clip retrieval with multi-camera component selection,
+  bounded duration/bytes, trusted HTTPS redirect hosts, partial-content support, retry/backoff for
+  `429` and transient `5xx` responses, and typed unavailable-media errors.
+- Added sanitized official v1.1 motion and button fixtures plus a raw-body HMAC replay script.
+  Contract tests prove signature verification occurs before JSON parsing, duplicate request IDs are
+  acknowledged without reprocessing, and accepted webhooks return within Ring's five-second limit.
+- Added watermark-aware media tests that return synthetic marked bytes unchanged for snapshots and
+  clips. No production code removes or obscures the Ring watermark.
+- Live Playground/staging validation remains externally blocked because client credentials, HMAC
+  key, a linked test account, and a Playground token are not present in the local environment. The
+  sanitized official payload contract is green and the exact blocker is recorded in
+  `docs/friction-log.md`.
+- Verification: the full backend suite passed 41 tests; Ruff passed; strict mypy passed across 45
+  source files; `git diff --check` passed.
+

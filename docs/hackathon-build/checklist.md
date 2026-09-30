@@ -49,7 +49,7 @@
   Acceptance: A group visit can be reviewed person by person; members cannot directly apply canonical profile changes; owner approval updates all cached views; audit history shows proposer, decision maker, action, and time; generic and qualified alert copy follows policy; tapping a test notification opens the correct visit.
   Verify: Run Android unit, lint, Compose UI, Room migration, and deep-link tests; manually walk the group-review and approval flow on an emulator. **Checkpoint:** Thomas reviews the actual Android screens and confirms the core workflow is understandable before cloud integration.
 
-- [ ] **7. Complete and validate the official Ring integration**
+- [x] **7. Complete and validate the official Ring integration**
   Spec ref: `spec.md > Components And Responsibilities > Ring camera adapter`, `spec.md > External APIs And Dependencies > Ring`, `spec.md > Risks And Verification > Risk 1`
   What to build: Complete official Ring OAuth token refresh/storage boundary, JSON:API event normalization, raw-body HMAC verification, five-second acknowledgement, request-id idempotency, snapshot and bounded clip retrieval, typed rate-limit/token/media errors, watermark-aware fixtures, and Playground/staging replay tooling. Keep private API/session-cookie libraries out of the production path.
   Acceptance: Motion and button events normalize correctly; invalid signatures fail before body logging/parsing; duplicates return success without reprocessing; retry/backoff handles 429/5xx; snapshots/clips retain the Ring watermark; the Developers Playground or a sanitized official payload reaches the local/deployed contract.

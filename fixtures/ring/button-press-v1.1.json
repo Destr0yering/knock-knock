@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "version": "1.1",
+    "time": "2026-08-14T12:54:01.120Z",
+    "request_id": "00000000-0000-4000-8000-000000000002",
+    "account_id": "ava1.ring.account.SANITIZED"
+  },
+  "data": {
+    "id": "ava1.ring.device.SANITIZED_button_press_1786715641120",
+    "type": "button_press",
+    "attributes": {
+      "source": "ava1.ring.device.SANITIZED",
+      "source_type": "devices",
+      "timestamp": 1786715641120,
+      "component_ids": [
+        "0"
+      ]
+    },
+    "relationships": {
+      "devices": {
+        "links": {
+          "self": "/v1/devices/ava1.ring.device.SANITIZED"
+        }
+      }
+    }
+  }
+}

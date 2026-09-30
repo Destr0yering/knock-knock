@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 import httpx
 
 from knock_knock.adapters.alerts.logging import LoggingAlertPublisher
 from knock_knock.adapters.camera.ring import (
     EnvironmentAccessTokenProvider,
+    InMemoryRingOAuthTokenStore,
+    RefreshingRingAccessTokenProvider,
     RingAdapterConfig,
     RingCameraAdapter,
+    RingOAuthToken,
 )
 from knock_knock.adapters.camera.simulator import SimulatedCameraAdapter
 from knock_knock.adapters.repositories.local import (
@@ -23,7 +27,7 @@ from knock_knock.adapters.vision.opencv import OpenCvLbphFaceIdEngine
 from knock_knock.adapters.vision.stub import UnknownFaceIdEngine
 from knock_knock.infrastructure.config import Settings
 from knock_knock.infrastructure.queue import InProcessEventQueue
-from knock_knock.ports.camera import CameraAdapter
+from knock_knock.ports.camera import AccessTokenProvider, CameraAdapter
 from knock_knock.ports.vision import FaceIdEngine
 from knock_knock.services.demo import DemoWorkflowService
 from knock_knock.services.pipeline import PipelineWorker, VisitorPipeline, VisitorReviewService
@@ -55,12 +59,33 @@ def build_container(settings: Settings) -> Container:
     http_client: httpx.AsyncClient | None = None
     if settings.camera_backend == "ring":
         http_client = httpx.AsyncClient()
+        access_token = settings.ring_access_token.get_secret_value()
+        refresh_token = settings.ring_refresh_token.get_secret_value()
+        token_provider: AccessTokenProvider
+        if refresh_token and settings.ring_account_id:
+            token_provider = RefreshingRingAccessTokenProvider(
+                token_url=settings.ring_oauth_token_url,
+                client_id=settings.ring_client_id.get_secret_value(),
+                client_secret=settings.ring_client_secret.get_secret_value(),
+                store=InMemoryRingOAuthTokenStore(
+                    {
+                        settings.ring_account_id: RingOAuthToken(
+                            access_token=access_token,
+                            refresh_token=refresh_token,
+                            expires_at=datetime.fromtimestamp(0, tz=UTC),
+                        )
+                    }
+                ),
+                client=http_client,
+            )
+        else:
+            token_provider = EnvironmentAccessTokenProvider(access_token)
         camera: CameraAdapter = RingCameraAdapter(
             RingAdapterConfig(
                 api_base_url=settings.ring_api_base_url,
                 hmac_signing_key=settings.ring_hmac_signing_key.get_secret_value(),
             ),
-            EnvironmentAccessTokenProvider(settings.ring_access_token.get_secret_value()),
+            token_provider,
             http_client,
         )
     else:

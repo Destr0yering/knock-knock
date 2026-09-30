@@ -100,8 +100,29 @@ Configure a public HTTPS webhook that routes to `/v1/webhooks/ring`. The adapter
 `X-Signature: sha256=...` HMAC against the **raw request body**, deduplicates `meta.request_id`,
 returns promptly, and processes the event on a worker. Image download uses Ring's documented
 two-step flow: POST `/v1/devices/{device_id}/media/image/download`, then GET the time-limited URL
-from the `303 Location` header. Current Ring media includes a mandatory visible watermark; the
-recognition crop/dataset should be tested with that overlay present.
+from the `303 Location` header. Historical clips use
+`POST /v1/devices/{device_id}/media/video/download` and accept complete or partial MP4 responses.
+Both paths enforce HTTPS host allowlists, byte limits, bounded duration, and bounded retry/backoff.
+Current Ring media includes a mandatory visible watermark; the adapter returns media bytes unchanged
+and the recognition crop/dataset must be tested with that overlay present.
+
+For local Ring mode, put only local secrets in the ignored `.env` file. A short-lived
+`KNOCK_KNOCK_RING_ACCESS_TOKEN` supports Playground development. When
+`KNOCK_KNOCK_RING_REFRESH_TOKEN`, `KNOCK_KNOCK_RING_ACCOUNT_ID`, client ID, and client secret are
+present, the local adapter refreshes the token and persists rotations through an explicit token-store
+interface. The bundled store is process-local and development-only; deployment must implement that
+same interface with encrypted per-account storage such as Secrets Manager/KMS.
+
+To replay the sanitized official v1.1 motion fixture against a local Ring-mode service:
+
+```powershell
+$env:KNOCK_KNOCK_RING_HMAC_SIGNING_KEY = "<local-test-key>"
+python scripts/replay_ring_webhook.py fixtures/ring/motion-v1.1.json
+```
+
+The replay script signs the exact file bytes and never prints the key or raw payload. The
+`fixtures/ring` files contain synthetic identifiers only. Keep actual Playground payloads, tokens,
+presigned URLs, and Ring media outside Git.
 
 Official references:
 
