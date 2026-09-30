@@ -24,6 +24,7 @@ import androidx.compose.material.icons.rounded.BookmarkAdded
 import androidx.compose.material.icons.rounded.BrokenImage
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Groups
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -66,6 +67,7 @@ import java.time.format.DateTimeFormatter
 fun TimelineRoute(
     viewModel: TimelineViewModel,
     onVisitClick: (String) -> Unit,
+    onTestAlert: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     TimelineScreen(
@@ -75,6 +77,7 @@ fun TimelineRoute(
         onRunDemo = viewModel::runDemo,
         onDismissMessage = viewModel::dismissMessage,
         onVisitClick = onVisitClick,
+        onTestAlert = onTestAlert,
     )
 }
 
@@ -87,6 +90,7 @@ fun TimelineScreen(
     onRunDemo: () -> Unit,
     onDismissMessage: () -> Unit,
     onVisitClick: (String) -> Unit,
+    onTestAlert: () -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(state.message) {
@@ -111,6 +115,9 @@ fun TimelineScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onTestAlert) {
+                        Icon(Icons.Rounded.NotificationsActive, contentDescription = "Send test alert")
+                    }
                     IconButton(onClick = onRefresh) {
                         Icon(Icons.Rounded.Refresh, contentDescription = "Refresh visits")
                     }

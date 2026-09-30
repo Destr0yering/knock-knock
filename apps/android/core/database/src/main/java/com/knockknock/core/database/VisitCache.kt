@@ -31,6 +31,9 @@ class VisitCache(private val dao: VisitDao) {
         upsert(visit)
         return visit
     }
+
+    suspend fun ensureOfflineDemo(): VisitSummary =
+        dao.getById("offline-demo-group-arrival")?.toDomain() ?: seedOfflineDemo()
 }
 
 fun VisitSummary.toEntity(): VisitWithPeople = VisitWithPeople(

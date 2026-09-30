@@ -109,3 +109,13 @@
 - Visual verification on the `Pixel_5` Google APIs emulator covered the empty state, loaded offline fixture, `Unknown` filter, multi-person summary, and expired-photo placeholder.
 - Verification: `lintDebug`, `testDebugUnitTest`, and `assembleDebug` completed successfully (286 Gradle tasks); the debug APK installed and launched successfully on the emulator.
 
+### Item 6 — Build Android review, profile approval, audit, and alert UX
+
+- Added a dedicated review feature with one actionable card per detected person, explicit unknown and face-undetected outcomes, saved-photo control, existing-profile lookup, confidence language, and member-submitted familiar-profile proposals.
+- Added a Room-backed owner approval queue and immutable modification history. The demo role switch proves that a household member can propose `Alex` but cannot decide it; the Ring owner can approve it, creating a familiar profile, updating the person record, and appending an attributed approval event.
+- Upgraded the Room cache from schema 1 to 2 with profile, proposal, and append-only audit tables plus a validated `MIGRATION_1_2`; direct demo deep links seed missing data without overwriting prior review decisions.
+- Added a replaceable visitor-notification gateway and future FCM message boundary. The local injector uses the same generic learning-period trust policy as the backend, and `knockknock://visits/{visitId}` opens the correct cached group visit.
+- Added JVM tests for learning-period and post-learning alert copy, role permissions, and deep-link parsing; added an on-device Room migration test and Compose launch test.
+- Manual emulator walkthrough: opened the three-person visit from a deep link, submitted `Alex` as a member, observed the member approval restriction, switched to Ring owner, approved the proposal, verified proposer/decision-maker audit entries, generated `Visitor detected / 3 people detected`, and tapped the notification back into the correct visit.
+- Verification: the combined `lintDebug`, `testDebugUnitTest`, `assembleDebug`, and `connectedDebugAndroidTest` gate passed 516 Gradle tasks, including the Room migration and Compose UI tests on the Pixel 5 Google APIs emulator.
+

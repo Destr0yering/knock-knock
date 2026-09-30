@@ -50,3 +50,35 @@ data class VisitWithPeople(
     @Relation(parentColumn = "id", entityColumn = "visitId")
     val people: List<PersonEntity>,
 )
+
+@Entity(tableName = "profiles")
+data class ProfileEntity(
+    @androidx.room.PrimaryKey val id: String,
+    val name: String,
+    val sampleCount: Int,
+    val updatedAt: String,
+)
+
+@Entity(tableName = "profile_proposals", indices = [Index("visitId"), Index("personId")])
+data class ProposalEntity(
+    @androidx.room.PrimaryKey val id: String,
+    val visitId: String,
+    val personId: String,
+    val proposedName: String,
+    val proposer: String,
+    val status: String,
+    val createdAt: String,
+    val decidedBy: String?,
+    val decidedAt: String?,
+)
+
+@Entity(tableName = "audit_entries", indices = [Index("personId"), Index("occurredAt")])
+data class AuditEntity(
+    @androidx.room.PrimaryKey val id: String,
+    val profileId: String?,
+    val personId: String,
+    val actor: String,
+    val action: String,
+    val detail: String,
+    val occurredAt: String,
+)

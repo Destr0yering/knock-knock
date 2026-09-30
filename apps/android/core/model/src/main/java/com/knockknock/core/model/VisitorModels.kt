@@ -84,6 +84,82 @@ enum class TimelineFilter(val label: String) {
     SAVED("Saved");
 }
 
+object ProfilePermissionPolicy {
+    fun canDecide(role: HouseholdRole): Boolean = role == HouseholdRole.OWNER
+}
+
+enum class ProposalStatus { PENDING, APPROVED, REJECTED }
+
+data class FamiliarProfile(
+    val id: String,
+    val name: String,
+    val sampleCount: Int,
+    val updatedAt: Instant,
+)
+
+data class ProfileProposal(
+    val id: String,
+    val visitId: String,
+    val personId: String,
+    val proposedName: String,
+    val proposer: String,
+    val status: ProposalStatus,
+    val createdAt: Instant,
+    val decidedBy: String? = null,
+    val decidedAt: Instant? = null,
+)
+
+data class AuditEntry(
+    val id: String,
+    val profileId: String?,
+    val personId: String,
+    val actor: String,
+    val action: String,
+    val detail: String,
+    val occurredAt: Instant,
+)
+
+data class VisitorAlert(
+    val title: String,
+    val body: String,
+    val includesIdentity: Boolean,
+)
+
+object VisitorTrustPolicy {
+    fun alert(
+        peopleCount: Int,
+        learningDay: Int,
+        candidateName: String?,
+        confidenceBand: ConfidenceBand,
+        disputed: Boolean = false,
+    ): VisitorAlert {
+        val generic = VisitorAlert(
+            title = "Visitor detected",
+            body = "$peopleCount ${if (peopleCount == 1) "person" else "people"} detected",
+            includesIdentity = false,
+        )
+        if (learningDay <= 30 || candidateName == null ||
+            confidenceBand != ConfidenceBand.HIGH || disputed
+        ) return generic
+        return VisitorAlert(
+            title = "Possible match: $candidateName",
+            body = generic.body,
+            includesIdentity = true,
+        )
+    }
+}
+
+object VisitDeepLink {
+    private const val PREFIX = "knockknock://visits/"
+
+    fun create(visitId: String): String = "$PREFIX$visitId"
+
+    fun parse(value: String?): String? = value
+        ?.takeIf { it.startsWith(PREFIX) }
+        ?.removePrefix(PREFIX)
+        ?.takeIf { it.isNotBlank() && !it.contains('/') }
+}
+
 fun VisitSummary.matches(filter: TimelineFilter): Boolean = when (filter) {
     TimelineFilter.ALL -> true
     TimelineFilter.FAMILIAR -> people.any {

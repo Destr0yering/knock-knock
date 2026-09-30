@@ -1,98 +1,110 @@
 package com.knockknock.app
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.knockknock.core.model.ConfidenceBand
+import com.knockknock.core.model.VisitDeepLink
+import com.knockknock.core.model.VisitorTrustPolicy
 import com.knockknock.core.ui.KnockKnockTheme
+import com.knockknock.feature.review.ApprovalRoute
+import com.knockknock.feature.review.ApprovalViewModel
+import com.knockknock.feature.review.ReviewViewModel
+import com.knockknock.feature.review.VisitReviewRoute
 import com.knockknock.feature.timeline.TimelineRoute
 import com.knockknock.feature.timeline.TimelineViewModel
 
 class MainActivity : ComponentActivity() {
+    private lateinit var notifications: VisitorNotificationGateway
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        notifications = LocalVisitorNotificationGateway(this)
         val container = (application as KnockKnockApplication).container
+        val initialVisitId = VisitDeepLink.parse(intent?.dataString)
         setContent {
             KnockKnockTheme {
-                val timelineViewModel: TimelineViewModel = viewModel(
-                    factory = container.timelineViewModelFactory,
+                KnockKnockNavHost(
+                    container = container,
+                    initialVisitId = initialVisitId,
+                    onTestAlert = ::postTestAlert,
                 )
-                KnockKnockNavHost(timelineViewModel)
             }
         }
+    }
+
+    private fun postTestAlert() {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 41)
+            return
+        }
+        notifications.showVisitAlert(
+            visitId = "offline-demo-group-arrival",
+            alert = VisitorTrustPolicy.alert(
+                peopleCount = 3,
+                learningDay = 1,
+                candidateName = "Morgan",
+                confidenceBand = ConfidenceBand.HIGH,
+            ),
+        )
     }
 }
 
 @Composable
-private fun KnockKnockNavHost(timelineViewModel: TimelineViewModel) {
+private fun KnockKnockNavHost(
+    container: AppContainer,
+    initialVisitId: String?,
+    onTestAlert: () -> Unit,
+) {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "timeline") {
+    val start = initialVisitId?.let { "visit/$it" } ?: "timeline"
+    NavHost(navController = navController, startDestination = start) {
         composable("timeline") {
+            val timelineViewModel: TimelineViewModel = viewModel(
+                factory = container.timelineViewModelFactory,
+            )
             TimelineRoute(
                 viewModel = timelineViewModel,
                 onVisitClick = { visitId -> navController.navigate("visit/$visitId") },
+                onTestAlert = onTestAlert,
             )
         }
         composable(
             route = "visit/{visitId}",
             arguments = listOf(navArgument("visitId") { type = NavType.StringType }),
         ) { entry ->
-            FoundationVisitScreen(
-                visitId = entry.arguments?.getString("visitId").orEmpty(),
-                onBack = navController::popBackStack,
+            val visitId = entry.arguments?.getString("visitId").orEmpty()
+            val reviewViewModel: ReviewViewModel = viewModel(
+                key = "review-$visitId",
+                factory = container.reviewViewModelFactory(visitId),
+            )
+            VisitReviewRoute(
+                viewModel = reviewViewModel,
+                onBack = {
+                    if (!navController.popBackStack()) navController.navigate("timeline")
+                },
+                onOpenApprovals = { navController.navigate("approvals") },
             )
         }
-    }
-}
-
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-private fun FoundationVisitScreen(visitId: String, onBack: () -> Unit) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Visit details") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
+        composable("approvals") {
+            val approvalViewModel: ApprovalViewModel = viewModel(
+                factory = container.approvalViewModelFactory,
             )
-        },
-    ) { padding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text("Review screen coming next", style = MaterialTheme.typography.headlineSmall)
-            Text(
-                "Cached visit: $visitId",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            ApprovalRoute(approvalViewModel, onBack = navController::popBackStack)
         }
     }
 }

@@ -43,7 +43,7 @@
   Acceptance: The app launches on a Google APIs emulator; a new household sees the learning explanation and demo action; fixture visits persist across restart in Room; the timeline shows person count, labels, verification state, media availability, and photo-expired placeholder; offline mode is visibly labeled.
   Verify: Run `apps\android\gradlew.bat lintDebug testDebugUnitTest assembleDebug`; launch the debug APK on an emulator and visually inspect empty, populated, filtered, offline, and expired-photo states.
 
-- [ ] **6. Build Android review, profile approval, audit, and alert UX**
+- [x] **6. Build Android review, profile approval, audit, and alert UX**
   Spec ref: `prd.md > Epic 3`, `prd.md > Epic 4`, `prd.md > Epic 6`, `prd.md > Epic 9`, `spec.md > Demo And Submission Flow > Live demo path`
   What to build: Add the visit-detail screen with one card per detected person, existing-profile search, unknown/face-undetected decisions, new/corrected profile proposals, owner approval queue, profile detail, immutable modification history, saved-photo action, learning and confidence language, and notification deep links. Add FCM service abstractions and a local notification injection path; longer refresh work runs through WorkManager.
   Acceptance: A group visit can be reviewed person by person; members cannot directly apply canonical profile changes; owner approval updates all cached views; audit history shows proposer, decision maker, action, and time; generic and qualified alert copy follows policy; tapping a test notification opens the correct visit.
