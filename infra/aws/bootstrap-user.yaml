@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Credential-less local-development user for Knock Knock
+
+Resources:
+  DeploymentUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: knock-knock-deployer
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/SignInLocalDevelopmentAccess"
+      Policies:
+        - PolicyName: AssumeKnockKnockDeploymentRole
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/KnockKnockDeploymentRole"
+      Tags:
+        - Key: Project
+          Value: KnockKnock
+        - Key: Purpose
+          Value: DevelopmentDeployment
+
+Outputs:
+  DeploymentUserName:
+    Value: !Ref DeploymentUser
+  DeploymentUserArn:
+    Value: !GetAtt DeploymentUser.Arn
+

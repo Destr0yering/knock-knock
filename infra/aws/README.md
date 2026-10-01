@@ -17,6 +17,31 @@ python -m pytest tests/infra
 Deployment creates billable AWS resources. Confirm the active identity and region immediately
 before deploying:
 
+Bootstrap the MFA-gated deployment role once from an authenticated account-owner session:
+
+```powershell
+aws cloudformation deploy `
+  --template-file infra/aws/bootstrap-user.yaml `
+  --stack-name knock-knock-deployer-user `
+  --capabilities CAPABILITY_NAMED_IAM `
+  --region us-east-1
+
+aws cloudformation deploy `
+  --template-file infra/aws/bootstrap-deployer.yaml `
+  --stack-name knock-knock-deployer `
+  --capabilities CAPABILITY_NAMED_IAM `
+  --parameter-overrides DeploymentUserArn=arn:aws:iam::YOUR_12_DIGIT_ACCOUNT_ID:user/knock-knock-deployer `
+  --region us-east-1
+```
+
+The bootstrap stack creates a `knock-knock-deployer` IAM user with no access keys. The user can
+use short-lived `aws login` credentials and assume only `KnockKnockDeploymentRole`. The role uses
+one-hour sessions, requires that user's MFA, has AWS `PowerUserAccess`, and can manage/pass only
+CloudFormation-generated `knock-knock-dev-*` execution roles.
+
+Assume `KnockKnockDeploymentRole` before deploying the application stack. Do not deploy the
+application as the root identity.
+
 ```powershell
 aws sts get-caller-identity
 aws configure get region

@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: MFA-gated deployment role for the Knock Knock development stack
+
+Parameters:
+  DeploymentUserArn:
+    Type: String
+    AllowedPattern: "^arn:[^:]+:iam::[0-9]{12}:user/knock-knock-deployer$"
+
+Resources:
+  DeploymentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: KnockKnockDeploymentRole
+      Description: Short-lived deployment role for the Knock Knock development stack
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Ref DeploymentUserArn
+            Action: sts:AssumeRole
+            Condition:
+              Bool:
+                aws:MultiFactorAuthPresent: true
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/PowerUserAccess"
+      Policies:
+        - PolicyName: KnockKnockExecutionRoleManagement
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ManageStackExecutionRoles
+                Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:GetRole
+                  - iam:TagRole
+                  - iam:UntagRole
+                  - iam:UpdateAssumeRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:GetRolePolicy
+                  - iam:ListRolePolicies
+                Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/knock-knock-dev-*"
+              - Sid: PassStackRolesOnlyToLambda
+                Effect: Allow
+                Action: iam:PassRole
+                Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/knock-knock-dev-*"
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: lambda.amazonaws.com
+      Tags:
+        - Key: Project
+          Value: KnockKnock
+        - Key: Purpose
+          Value: DevelopmentDeployment
+
+Outputs:
+  DeploymentRoleArn:
+    Value: !GetAtt DeploymentRole.Arn
+
