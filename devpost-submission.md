@@ -121,9 +121,9 @@ The SAM stack validates and builds locally. Live deployment evidence remains pen
 
 Knock Knock is a new project created during the hackathon window and licensed under MIT. The contribution is a modular, privacy-conscious reference implementation showing how to process group Ring events correctly: detect and crop every face before matching, keep identity advisory and user-verified, enforce owner/member roles server-side, and preserve a deterministic credential-free demo path.
 
-- Contribution URL: **TODO — public GitHub repository or qualifying contribution URL**
-- Project repository URL: **TODO — public GitHub URL**
-- GitHub username: **TODO — confirm username**
+- Contribution URL: **https://github.com/Destr0yering/knock-knock**
+- Project repository URL: **https://github.com/Destr0yering/knock-knock**
+- GitHub username: **Destr0yering**
 
 ## Testing Instructions
 
@@ -176,7 +176,7 @@ The credential-free local demo and Android emulator path remain the documented f
 
 ## Public Repository Link
 
-**TODO — publish the repository after the pre-publication secret/privacy scan.**
+https://github.com/Destr0yering/knock-knock
 
 ## Demo Video
 
@@ -248,7 +248,6 @@ Still required before final submission:
 
 - AWS account activation and live deployment/evidence
 - Live Ring Playground or clearly filmed sanitized official simulator/replay path
-- Public GitHub URL and GitHub username
 - Screenshots and under-three-minute video URL
 - Final security/secret scan and participant review
 - Confirmation of official eligibility checkboxes
@@ -268,18 +267,18 @@ Still required before final submission:
 - `28287` Country: **TODO — confirm country of residence**
 - `28288` Canada province: **TODO — confirm N/A or province**
 - `28289` Primary Track: **Ring**
-- `28290` GitHub repository: **TODO**
+- `28290` GitHub repository: **https://github.com/Destr0yering/knock-knock**
 - `28291` Project timing: **New** (first commit September 29, 2026)
 - `28293` AWS Builder Mini Challenge: **Yes**
 - `28294` AWS services and integration: use the AWS Builder section above, updated with live evidence
-- `28295` Open Source Mini Challenge: **Yes, contingent on public MIT-licensed repository**
-- `28296` Contribution URL: **TODO**
-- `28297` Project repository URL: **TODO**
-- `28298` GitHub username: **TODO**
+- `28295` Open Source Mini Challenge: **Yes — public MIT-licensed repository**
+- `28296` Contribution URL: **https://github.com/Destr0yering/knock-knock**
+- `28297` Project repository URL: **https://github.com/Destr0yering/knock-knock**
+- `28298` GitHub username: **Destr0yering**
 - `28299` Open-source description: use the Open Source section above
 - `28300` Feature Requests: use the Feature Requests section above
-- `28301` Friction Log URL: **TODO — public URL to `docs/friction-log.md`**
-- `28302` Project Testing Link: **TODO — README or public test evidence URL**
+- `28301` Friction Log URL: **https://github.com/Destr0yering/knock-knock/blob/main/docs/friction-log.md**
+- `28302` Project Testing Link: **https://github.com/Destr0yering/knock-knock#quick-start**
 - `28303`–`28307` Feedback: use the five Product Feedback sections above
 - `28308` Age: **TODO — participant must confirm**
 - `28309` Eligible Jurisdiction: **TODO — participant must confirm**
