@@ -229,4 +229,7 @@
 - Item 11 remains open until the live item 10 path is resolved, remaining cloud evidence is
   collected, dependency/security and clean-checkout gates run, and Thomas completes the encoded
   final visual/timed rehearsal checkpoint.
+- The first remote CI run passed the backend job but exposed a runner-only Android setup issue:
+  the setup action requested Google's retired `tools` SDK package. Updated CI to request only
+  `platform-tools` and upgraded the maintained checkout/Java actions before re-running the gate.
 
