@@ -56,5 +56,7 @@ jobs:
         with:
           packages: platform-tools
       - name: Android quality gate
-        run: ./gradlew lintDebug testDebugUnitTest assembleDebug --no-daemon
+        run: |
+          chmod +x gradlew
+          ./gradlew lintDebug testDebugUnitTest assembleDebug --no-daemon
 
