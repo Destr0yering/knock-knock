@@ -208,3 +208,25 @@
   unchecked until AWS billing/service activation permits deployment, Cognito test users, a real
   FCM alert, CloudWatch inspection, and the participant checkpoint.
 
+### Item 11 — Hardening and rehearsal (independent work in progress)
+
+- Preserved item 10's MFA-gated live deployment checkpoint while Thomas was away from the
+  authenticator device, and advanced only work that does not claim live AWS verification.
+- Added least-privilege GitHub Actions gates for Python 3.12 Ruff, strict mypy, all backend tests,
+  Android lint/unit/build, and rejection of common tracked credentials, biometric configuration,
+  private logs/databases, and Android packages.
+- Added a private vulnerability-reporting policy, repository threat model, and explicit privacy and
+  fixed-retention inventory. The documents separate current controls from the evidence still
+  required after deployment and from the legal/product work required before any public pilot.
+- Added a timed three-path demo rehearsal runbook: live Ring/AWS, signed official-payload replay
+  against AWS, and deterministic local fallback. Every path requires honest labeling and synthetic
+  or consented media.
+- Refreshed README quality/security guidance to reflect the implemented Cognito validated-claims
+  boundary and server-side household authorization.
+- Verification: Ruff passed; strict mypy passed across 57 source files; all 60 backend tests passed;
+  `git diff --check` and the tracked-private-artifact filename check passed; Android
+  `lintDebug`, `testDebugUnitTest`, and `assembleDebug` completed successfully across 334 tasks.
+- Item 11 remains open until the live item 10 path is resolved, remaining cloud evidence is
+  collected, dependency/security and clean-checkout gates run, and Thomas completes the encoded
+  final visual/timed rehearsal checkpoint.
+

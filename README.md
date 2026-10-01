@@ -38,6 +38,9 @@ CameraAdapter -> EventQueue -> VisitorPipeline -> FaceIdEngine
   Ring or a particular recognition vendor.
 
 See [docs/architecture.md](docs/architecture.md) for boundaries and the complete data lifecycle.
+Security and privacy details are documented in [SECURITY.md](SECURITY.md),
+[docs/threat-model.md](docs/threat-model.md), and
+[docs/privacy-and-retention.md](docs/privacy-and-retention.md).
 
 ## Stack
 
@@ -87,6 +90,17 @@ python -m ruff check .
 python -m mypy src
 python -m pytest
 ```
+
+Android quality checks:
+
+```powershell
+cd apps\android
+.\gradlew.bat lintDebug testDebugUnitTest assembleDebug --no-daemon
+```
+
+GitHub Actions runs both gates for pushes to `main` and pull requests. Its artifact check rejects
+common credential, biometric-configuration, private-log, database, and Android-package filenames
+if they are accidentally tracked.
 
 The AWS development stack lives in `infra/aws/template.yaml`. Its runbook covers local SAM
 validation/build, identity checks, first deployment, smoke testing, and teardown. Deployment is
@@ -181,8 +195,9 @@ Confidence is advisory. The threshold is configurable, and every suggested match
 - `GET/POST /v1/profile-proposals...` — member proposals and owner decisions.
 - `GET /v1/audit` — immutable household activity and profile modification history.
 
-Authentication for management routes is a required production hardening item; do not expose this
-proof of concept directly to the internet except behind a private tunnel/access layer.
+The AWS path accepts identity only from API Gateway's validated Cognito claims and resolves active
+household membership server-side. The local demo header is development-only. Do not expose a local
+proof-of-concept process directly to the internet.
 
 ## Git initialization
 
@@ -206,6 +221,9 @@ If `git init` created `master` on an older Git version, run `git branch -M main`
 4. Run Ruff, mypy, and pytest before opening a pull request.
 5. Never attach real Ring media, face datasets, tokens, logs, or `.env` files to issues or commits.
 6. Describe privacy impact, migration needs, and manual verification steps in the pull request.
+
+Report security issues privately according to [SECURITY.md](SECURITY.md). The demo rehearsal and
+three fallback paths are documented in [docs/demo-rehearsal.md](docs/demo-rehearsal.md).
 
 ## License
 
