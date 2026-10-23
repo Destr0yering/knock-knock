@@ -1,0 +1,13 @@
+Video title: Knock Knock - Synthetic Backend Demo | Amazon Developer Hackathon
+
+Description:
+Actual deterministic backend demonstration of Knock Knock: three-person visitor event, explicit uncertainty, member proposal, owner-only approval, and audit history. English captions; no private Ring footage or biometric data.
+
+This is a custom synthetic fixture demonstration. It does not demonstrate a linked Ring account, official Ring Playground, live Rekognition, or delivered FCM notification. Android source and AWS/Ring integrations are in the project repository; unverified integration work is disclosed in the project write-up.
+
+Source: https://github.com/Destr0yering/knock-knock/tree/codex/knock-knock-mvp
+
+Upload knock-knock-demo.mp4 to your existing YouTube channel or Vimeo account. Set it PUBLIC, wait until playback works, and paste the URL into the Devpost video field. The file has English captions and no music or voice-over.
+
+Optional video-editor prompt (do not generate fake product footage):
+Edit the supplied actual simulator-output cards into an 84-second 16:9 demo. Preserve every limitation disclosure. Use simple crossfades and readable English captions. Do not invent Android interactions, Ring device footage, recognition successes, notifications, user testimonials, or test results. Do not upload private visitor images to a model. Keep all factual values from demo-output.json unchanged.

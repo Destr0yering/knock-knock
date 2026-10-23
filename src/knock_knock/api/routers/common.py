@@ -2,14 +2,27 @@ from __future__ import annotations
 
 from typing import Annotated, cast
 
-from fastapi import Header, Request
+from fastapi import Depends, Header, HTTPException, Request
 
 from knock_knock.api.demo_schemas import AlertView, PersonView, VisitDetailView
 from knock_knock.domain.models import Visit, VisitPerson
 from knock_knock.infrastructure.container import Container
 from knock_knock.services.demo import DemoWorkflowService
 
-ActorId = Annotated[str, Header(alias="X-Demo-User")]
+
+async def authenticated_actor_id(
+    request: Request,
+    demo_user: Annotated[str | None, Header(alias="X-Demo-User")] = None,
+) -> str:
+    container = cast(Container, request.app.state.container)
+    if container.settings.environment.casefold() in {"development", "dev", "test"}:
+        return demo_user or "demo-owner"
+    if container.owner_authenticator is None:
+        raise HTTPException(status_code=401, detail="Sign-in is required")
+    return (await container.owner_authenticator(request)).subject
+
+
+ActorId = Annotated[str, Depends(authenticated_actor_id)]
 
 
 def demo_service(request: Request) -> DemoWorkflowService:

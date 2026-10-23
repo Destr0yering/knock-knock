@@ -2,6 +2,12 @@
 
 > **Know who's at the door before the knock knock!**
 
+The current Android privacy build is an owner-controlled **local image-import
+journal** with encrypted storage and bundled on-device face AI. Its private
+records do not use the legacy cloud service below, and Ring is not connected in
+this build. See [private Android build and tests](docs/private-android-testing.md)
+for setup, current capabilities, and the limits of exports and recognition.
+
 Knock Knock is a privacy-conscious visitor-awareness foundation for homes and businesses. A Ring
 motion or doorbell event yields a freeze frame, a swappable vision engine suggests a familiar
 profile or `unknown`, and the user remains responsible for confirming, correcting, and categorizing
@@ -40,7 +46,9 @@ CameraAdapter -> EventQueue -> VisitorPipeline -> FaceIdEngine
 See [docs/architecture.md](docs/architecture.md) for boundaries and the complete data lifecycle.
 Security and privacy details are documented in [SECURITY.md](SECURITY.md),
 [docs/threat-model.md](docs/threat-model.md), and
-[docs/privacy-and-retention.md](docs/privacy-and-retention.md).
+[docs/privacy-and-retention.md](docs/privacy-and-retention.md). The controlled synthetic pilot
+boundary and tester-readiness gaps are tracked in
+[docs/tester-readiness.md](docs/tester-readiness.md).
 
 ## Stack
 

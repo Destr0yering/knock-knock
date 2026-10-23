@@ -1,6 +1,5 @@
 package com.knockknock.core.ui
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -11,11 +10,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val Pine = Color(0xFF183A32)
-val PineLight = Color(0xFF2F6658)
-val Mint = Color(0xFFDCEEE5)
-val Cream = Color(0xFFF7F3E8)
-val Paper = Color(0xFFFFFCF5)
+val Pine = Color(0xFF246B5A)
+val PineLight = Color(0xFF4B8F7D)
+val Mint = Color(0xFFDDF4EA)
+val Cream = Color(0xFFFFFBF5)
+val Paper = Color(0xFFFFFFFF)
 val Amber = Color(0xFFF4B942)
 val Ink = Color(0xFF17231F)
 val MutedInk = Color(0xFF586660)
@@ -33,7 +32,7 @@ private val LightColors = lightColorScheme(
     onBackground = Ink,
     surface = Paper,
     onSurface = Ink,
-    surfaceVariant = Color(0xFFE9E9DF),
+    surfaceVariant = Color(0xFFEAF2EE),
     onSurfaceVariant = MutedInk,
     error = AlertRed,
 )
@@ -74,7 +73,8 @@ private val KnockKnockTypography = androidx.compose.material3.Typography(
 
 @Composable
 fun KnockKnockTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    // Keep the demo bright and readable even when the tablet is using dark mode.
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(

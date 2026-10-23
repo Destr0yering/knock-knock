@@ -1,0 +1,54 @@
+# Design contract for the Android privacy MVP, not a runtime settings parser.
+# See Android implementation and validation report; legacy AWS runtime is separate.
+[product]
+name = "Knock Knock"
+contract_version = 1
+status = "private-image-mvp"
+
+[deployment]
+record_authority = "owner_android_device"
+vision_location = "owner_android_device"
+camera_provider = "owner_image_import"
+ring_cloud_dependency = false
+# A future Ring-enabled build would depend on Ring's cloud.
+python_service_purpose = "synthetic_development_only"
+
+[privacy]
+audio_capture = false
+audio_storage = false
+external_identity_matching = false
+visitor_data_model_training = false
+cloud_backup_default = false
+cloud_media_storage = false
+cloud_profile_storage = false
+cloud_visit_log_storage = false
+
+[storage]
+encryption_required = true
+key_location = "android_keystore"
+device_backup_allowed = false
+unsaved_photo_retention_days = 30
+visit_log_retention_days = 365
+owner_saved_photos_exempt_from_photo_expiry = true
+owner_correction_and_deletion_required = true
+
+[identity]
+admin = "owner_device_credential"
+ring_account_owner_verification_enabled = false
+match_is_suggestion = true
+owner_confirmation_required = true
+unknown_and_face_undetected_supported = true
+profile_modification_audit_required = true
+
+[exports]
+source_required = true
+capture_time_required = true
+export_time_required = true
+sha256_manifest_required = true
+audio_allowed = false
+claims_legal_admissibility = false
+
+[release]
+private_image_import_enabled = true
+ring_ingestion_enabled = false
+gate = "android_device_validation_required_before_release"

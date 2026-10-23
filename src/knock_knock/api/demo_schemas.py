@@ -32,6 +32,8 @@ class ProposalDecisionRequest(BaseModel):
 
 class DeviceTokenRequest(BaseModel):
     token: str = Field(min_length=8, max_length=4096)
+    alerts_consent: bool = False
+    consent_version: str = Field(default="", max_length=40)
 
 
 class AlertView(BaseModel):

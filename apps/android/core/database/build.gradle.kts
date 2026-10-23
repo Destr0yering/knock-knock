@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.knockknock.core.database"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         minSdk = 26
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -26,6 +26,8 @@ kapt {
 }
 
 dependencies {
+    implementation(project(":core:privacy"))
+    implementation("net.zetetic:sqlcipher-android:4.19.1@aar")
     implementation(project(":core:model"))
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

@@ -24,10 +24,11 @@ class VisitAlertMessage:
         return {
             "message": {
                 "token": token,
-                "notification": {"title": self.title, "body": self.body},
                 "data": {
                     "visit_id": self.visit_id,
                     "deep_link": f"knockknock://visits/{self.visit_id}",
+                    "title": self.title,
+                    "body": self.body,
                 },
                 "android": {"priority": "high"},
             }

@@ -6,3 +6,8 @@
 !infra/
 !infra/aws/
 !infra/aws/*.Dockerfile
+!tests/
+!tests/**
+!fixtures/
+!fixtures/**
+# Local harness build context contains only source, tests, and synthetic fixtures.

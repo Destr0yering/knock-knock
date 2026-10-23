@@ -87,7 +87,7 @@ fun TimelineScreen(
     state: TimelineUiState,
     onFilterSelected: (TimelineFilter) -> Unit,
     onRefresh: () -> Unit,
-    onRunDemo: () -> Unit,
+    onRunDemo: (String) -> Unit,
     onDismissMessage: () -> Unit,
     onVisitClick: (String) -> Unit,
     onTestAlert: () -> Unit,
@@ -134,6 +134,7 @@ fun TimelineScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item { LearningBanner() }
+            item { DemoScenarios(onRunDemo) }
             if (state.isOffline) {
                 item { OfflineBadge() }
             }
@@ -180,7 +181,7 @@ private fun FilterRow(
 }
 
 @Composable
-private fun EmptyTimeline(onRunDemo: () -> Unit) {
+private fun EmptyTimeline(onRunDemo: (String) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(26.dp),
@@ -208,10 +209,31 @@ private fun EmptyTimeline(onRunDemo: () -> Unit) {
             )
             Spacer(Modifier.height(22.dp))
             Button(
-                onClick = onRunDemo,
+                onClick = { onRunDemo("family") },
                 colors = ButtonDefaults.buttonColors(containerColor = Pine),
             ) {
                 Text("Run demo event")
+            }
+        }
+    }
+}
+
+@Composable
+private fun DemoScenarios(onRunDemo: (String) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Try a visitor story", style = MaterialTheme.typography.titleMedium)
+            Text("Synthetic beta examples", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(onClick = { onRunDemo("family") }) { Text("Family arrival") }
+                Button(onClick = { onRunDemo("delivery") }) { Text("Delivery") }
+                Button(onClick = { onRunDemo("unknown") }) { Text("Unknown visitor") }
             }
         }
     }
@@ -241,7 +263,15 @@ private fun VisitCard(visit: VisitSummary, onClick: () -> Unit) {
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Front door", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        when (visit.id) {
+                            "offline-demo-group-arrival" -> "Family arrival · Demo"
+                            "offline-demo-delivery" -> "Delivery · Demo"
+                            "offline-demo-unknown" -> "Unknown visitor · Demo"
+                            else -> "Front door"
+                        },
+                        style = MaterialTheme.typography.titleLarge,
+                    )
                     Text(
                         formatter.format(visit.occurredAt),
                         style = MaterialTheme.typography.bodyMedium,

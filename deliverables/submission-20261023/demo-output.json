@@ -1,0 +1,120 @@
+{
+  "visit": {
+    "id": "demo-visit-group-arrival",
+    "event_type": "button_press",
+    "occurred_at": "2026-10-23T18:30:12.606403Z",
+    "status": "ready",
+    "source": "deterministic-fixture",
+    "person_count": 3,
+    "alert": {
+      "title": "Visitor detected",
+      "body": "3 people detected",
+      "includes_identity": false
+    },
+    "people": [
+      {
+        "id": "demo-person-1",
+        "review_state": "unresolved",
+        "confidence_band": "high",
+        "similarity": 0.96,
+        "suggested_profile_id": "demo-profile-morgan",
+        "suggested_name": "Morgan",
+        "confirmed_profile_id": null,
+        "media_available": true,
+        "saved": false,
+        "version": 1
+      },
+      {
+        "id": "demo-person-2",
+        "review_state": "unresolved",
+        "confidence_band": "unknown",
+        "similarity": 0.54,
+        "suggested_profile_id": null,
+        "suggested_name": null,
+        "confirmed_profile_id": null,
+        "media_available": true,
+        "saved": false,
+        "version": 1
+      },
+      {
+        "id": "demo-person-3",
+        "review_state": "face_undetected",
+        "confidence_band": "unknown",
+        "similarity": 0.0,
+        "suggested_profile_id": null,
+        "suggested_name": null,
+        "confirmed_profile_id": null,
+        "media_available": true,
+        "saved": false,
+        "version": 1
+      }
+    ],
+    "version": 1
+  },
+  "member_proposal": {
+    "person": {
+      "id": "demo-person-2",
+      "review_state": "proposed",
+      "confidence_band": "unknown",
+      "similarity": 0.54,
+      "suggested_profile_id": null,
+      "suggested_name": null,
+      "confirmed_profile_id": null,
+      "media_available": true,
+      "saved": false,
+      "version": 2
+    },
+    "proposal_id": "3190df82-0fdd-536c-baf7-57d21611e4f2",
+    "proposal_status": "pending"
+  },
+  "member_approval_attempt": {
+    "status": 403,
+    "body": {
+      "error": {
+        "code": "forbidden",
+        "message": "Only the Ring account owner can perform this action"
+      }
+    }
+  },
+  "owner_approval": {
+    "proposal": {
+      "id": "3190df82-0fdd-536c-baf7-57d21611e4f2",
+      "visit_id": "demo-visit-group-arrival",
+      "person_id": "demo-person-2",
+      "action": "create",
+      "proposed_by": "demo-member",
+      "proposed_at": "2026-10-23T18:30:12.647253Z",
+      "proposed_name": "Taylor",
+      "decision": "approved",
+      "decided_by": "demo-owner",
+      "decided_at": "2026-10-23T18:30:12.669405Z",
+      "reason": "Confirmed from the visit clip",
+      "version": 2
+    },
+    "profile_id": "profile-3190df82-0fdd-536c-baf7-57d21611e4f2",
+    "profile_name": "Taylor",
+    "person": {
+      "id": "demo-person-2",
+      "review_state": "confirmed",
+      "confidence_band": "unknown",
+      "similarity": 0.54,
+      "suggested_profile_id": null,
+      "suggested_name": null,
+      "confirmed_profile_id": "profile-3190df82-0fdd-536c-baf7-57d21611e4f2",
+      "media_available": true,
+      "saved": false,
+      "version": 3
+    }
+  },
+  "saved_media": {
+    "media_id": "demo-media-2",
+    "saved": true,
+    "expires_at": null
+  },
+  "audit_event_types": [
+    "media.saved",
+    "profile.proposal_approved",
+    "visit.person_reviewed",
+    "demo.fixture_ingested"
+  ]
+}

@@ -39,6 +39,7 @@ class ReviewViewModel(
         repository.confirmProfile(personId, profile)
     }
     fun savePhoto(personId: String) = launch { repository.savePhoto(personId) }
+    fun saveAsUnnamedProfile(personId: String) = launch { repository.saveAsUnnamedProfile(personId) }
     fun propose(personId: String, name: String) = launch {
         repository.proposeProfile(visitId, personId, name)
     }

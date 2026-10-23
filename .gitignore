@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.local.example
 *.pem
 *.key
 *.p12
@@ -34,6 +35,10 @@ venv/
 env/
 ENV/
 .pytest_cache/
+.pytest-temp/
+.pytest-run*/
+.pytest-ring-debug/
+.pytest-demo-test-retry/
 .mypy_cache/
 .ruff_cache/
 .tools/
@@ -60,6 +65,8 @@ tmp/
 
 # Android / Gradle
 .gradle/
+.kotlin/
+.codex-remote-attachments/
 local.properties
 *.iml
 **/build/
@@ -95,5 +102,17 @@ Desktop.ini
 *.temp
 *.bak
 exports/
+.runtime/
+.aws-sam-fixed/
+*.enc
+*.vault
+*.keystore
+*.jks
+google-services.json
+service-account*.json
 screenshots/private/
+apps/android/demo-beta-24-frames.zip
 
+
+# Workspace-local Android build outputs
+apps/android/.codex-build/

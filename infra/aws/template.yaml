@@ -1,6 +1,14 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: Knock Knock hackathon development stack
+Description: Knock Knock snapshot-only Ring processing with owner-scoped storage and queued account deletion
+
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@3
+  com.aws.cloudformation.Context:
+    ref:
+      - docs/privacy-and-retention.md
+      - docs/tester-readiness.md
 
 Parameters:
   Environment:
@@ -10,6 +18,14 @@ Parameters:
   AllowedOrigin:
     Type: String
     Default: "https://localhost.invalid"
+  CognitoCallbackUrl:
+    Type: String
+    Description: Public HTTPS URL for the Ring partner sign-in callback
+    AllowedPattern: "^https://[^\\s]+/v1/ring/link$"
+  CognitoAndroidCallbackUrl:
+    Type: String
+    Default: knockknock://auth/callback
+    Description: Native Android OAuth callback URI; must match the app's registered scheme
   LogRetentionDays:
     Type: Number
     Default: 14
@@ -22,10 +38,32 @@ Parameters:
     Type: Number
     Default: 365
     AllowedValues: [365]
+  FirebaseProjectId:
+    Type: String
+    Default: knock-knock-34c93
+  GoogleWorkloadIdentityPoolId:
+    Type: String
+    Default: knock-knock-aws
+  GoogleWorkloadIdentityProviderId:
+    Type: String
+    Default: knock-knock-worker
+  GoogleFcmServiceAccountEmail:
+    Type: String
+    Default: knock-knock-fcm@knock-knock-34c93.iam.gserviceaccount.com
+  PublicDeveloperName:
+    Type: String
+    Default: Got2Get2Work
+    MaxLength: 160
+    Description: Public operator name shown on the privacy notice; leave blank to keep the page unavailable
+  PrivacyContactEmail:
+    Type: String
+    Default: got2get2worksupport@gmail.com
+    AllowedPattern: "^$|^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    Description: Monitored privacy contact; leave blank to keep the page unavailable
 
 Globals:
   Function:
-    Architectures: [x86_64]
+    Architectures: [arm64]
     Tracing: Active
     Environment:
       Variables:
@@ -33,13 +71,26 @@ Globals:
         KNOCK_KNOCK_CAMERA_BACKEND: ring
         KNOCK_KNOCK_VISION_BACKEND: aws
         KNOCK_KNOCK_AWS_REGION: !Ref AWS::Region
+        KNOCK_KNOCK_AWS_REKOGNITION_COLLECTION_ID: !Sub "knock-knock-${Environment}-faces"
         KNOCK_KNOCK_VISIT_TABLE: !Ref VisitTable
         KNOCK_KNOCK_HOUSEHOLD_TABLE: !Ref HouseholdTable
+        KNOCK_KNOCK_RING_CONNECTIONS_TABLE: !Ref RingConnectionsTable
+        KNOCK_KNOCK_DEVICE_TOKENS_TABLE: !Ref DeviceTokensTable
+        KNOCK_KNOCK_DELETION_JOBS_TABLE: !Ref DeletionJobsTable
+        KNOCK_KNOCK_DELETION_QUEUE_URL: !Ref DeletionQueue
         KNOCK_KNOCK_EVENT_LEDGER_TABLE: !Ref EventLedgerTable
         KNOCK_KNOCK_MEDIA_BUCKET: !Ref MediaBucket
         KNOCK_KNOCK_EVENT_QUEUE_URL: !Ref EventQueue
         KNOCK_KNOCK_RING_SECRET_ARN: !Ref RingCredentialsSecret
         KNOCK_KNOCK_FIREBASE_SECRET_ARN: !Ref FirebaseCredentialsSecret
+        KNOCK_KNOCK_FIREBASE_PROJECT_ID: !Ref FirebaseProjectId
+        KNOCK_KNOCK_GCP_WIF_AUDIENCE: !Sub "//iam.googleapis.com/projects/552328665102/locations/global/workloadIdentityPools/${GoogleWorkloadIdentityPoolId}/providers/${GoogleWorkloadIdentityProviderId}"
+        KNOCK_KNOCK_GCP_FCM_SERVICE_ACCOUNT: !Ref GoogleFcmServiceAccountEmail
+        KNOCK_KNOCK_COGNITO_USER_POOL_ID: !Ref UserPool
+        KNOCK_KNOCK_COGNITO_CLIENT_ID: !Ref UserPoolClient
+        KNOCK_KNOCK_COGNITO_DOMAIN_URL: !Sub "https://knock-knock-${AWS::AccountId}-${Environment}.auth.${AWS::Region}.amazoncognito.com"
+        KNOCK_KNOCK_PUBLIC_DEVELOPER_NAME: !Ref PublicDeveloperName
+        KNOCK_KNOCK_PRIVACY_CONTACT_EMAIL: !Ref PrivacyContactEmail
 
 Resources:
   HttpApi:
@@ -53,6 +104,7 @@ Resources:
           - Authorization
           - Content-Type
           - X-Signature
+          - X-Deletion-Receipt
         AllowMethods:
           - GET
           - POST
@@ -87,14 +139,16 @@ Resources:
     Metadata:
       DockerContext: ../..
       Dockerfile: infra/aws/api.Dockerfile
-      DockerTag: python3.12-v1
+      DockerTag: python3.12-privacy-deletion-20261021
     Properties:
       FunctionName: !Sub "knock-knock-${Environment}-api"
       PackageType: Image
       MemorySize: 768
-      Timeout: 15
-      ReservedConcurrentExecutions: 5
+      Timeout: 30
       Role: !GetAtt ApiExecutionRole.Arn
+      Environment:
+        Variables:
+          KNOCK_KNOCK_VISION_BACKEND: stub
       Events:
         Health:
           Type: HttpApi
@@ -116,7 +170,53 @@ Resources:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
-            Path: /v1/ring/oauth/callback
+            Path: /v1/ring/oauth/token
+            Method: POST
+            Auth:
+              Authorizer: NONE
+        RingAccountLink:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /v1/ring/link
+            Method: GET
+            Auth:
+              Authorizer: NONE
+        RingAccountLinkScript:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /v1/ring/link.js
+            Method: GET
+            Auth:
+              Authorizer: NONE
+        RingLinkComplete:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /v1/ring/link/complete
+            Method: GET
+            Auth:
+              Authorizer: NONE
+        AccountDeletion:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /v1/account/deletion
+            Method: POST
+        AccountDeletionStatus:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /v1/account/deletion/{request_id}
+            Method: GET
+            Auth:
+              Authorizer: NONE
+        PrivacyNotice:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /privacy
             Method: GET
             Auth:
               Authorizer: NONE
@@ -140,7 +240,7 @@ Resources:
     Metadata:
       DockerContext: ../..
       Dockerfile: infra/aws/worker.Dockerfile
-      DockerTag: python3.12-v1
+      DockerTag: python3.12-privacy-deletion-20261021
     Properties:
       FunctionName: !Sub "knock-knock-${Environment}-worker"
       PackageType: Image
@@ -148,7 +248,6 @@ Resources:
       Timeout: 60
       EphemeralStorage:
         Size: 1024
-      ReservedConcurrentExecutions: 2
       Role: !GetAtt WorkerExecutionRole.Arn
       Events:
         RingEvents:
@@ -157,6 +256,13 @@ Resources:
             Queue: !GetAtt EventQueue.Arn
             BatchSize: 5
             MaximumBatchingWindowInSeconds: 2
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+        AccountDeletionJobs:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt DeletionQueue.Arn
+            BatchSize: 1
             FunctionResponseTypes:
               - ReportBatchItemFailures
 
@@ -186,6 +292,55 @@ Resources:
       QueueName: !Sub "knock-knock-${Environment}-events-dlq"
       KmsMasterKeyId: alias/aws/sqs
       MessageRetentionPeriod: 1209600
+
+  DeletionQueue:
+    Type: AWS::SQS::Queue
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: isolates owner deletion jobs from visitor events and retries partial cleanup
+        must:
+          - retain failed jobs for operator recovery; never mark deletion complete before cleanup succeeds
+        mutable: change-with-constraints
+    Properties:
+      QueueName: !Sub "knock-knock-${Environment}-deletions"
+      KmsMasterKeyId: alias/aws/sqs
+      VisibilityTimeout: 360
+      MessageRetentionPeriod: 345600
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeletionDeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  DeletionDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "knock-knock-${Environment}-deletions-dlq"
+      KmsMasterKeyId: alias/aws/sqs
+      MessageRetentionPeriod: 1209600
+
+  DeletionJobsTable:
+    Type: AWS::DynamoDB::Table
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: opaque receipt lets a signed-out owner check asynchronous deletion progress
+        must:
+          - store only a one-way receipt hash; expire receipt records after 30 days
+        mutable: change-with-constraints
+    Properties:
+      TableName: !Sub "knock-knock-${Environment}-deletion-jobs"
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+      AttributeDefinitions:
+        - AttributeName: request_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: request_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
 
   MediaBucket:
     Type: AWS::S3::Bucket
@@ -245,6 +400,8 @@ Resources:
     Properties:
       TableName: !Sub "knock-knock-${Environment}-households"
       BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
       AttributeDefinitions:
         - AttributeName: household_id
           AttributeType: S
@@ -260,10 +417,53 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-      SSESpecification:
-        SSEEnabled: true
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+
+  RingConnectionsTable:
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: stores Ring OAuth tokens with owner association so account deletion can remove the exact linked token set
+        must:
+          - token secrets remain encrypted and are never returned to the app
+          - preserve owner_subject indexing for account cleanup
+        mutable: change-with-constraints
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "knock-knock-${Environment}-ring-connections"
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+      AttributeDefinitions:
+        - AttributeName: account_id
+          AttributeType: S
+        - AttributeName: state_partition
+          AttributeType: S
+        - AttributeName: owner_subject
+          AttributeType: S
+      KeySchema:
+        - AttributeName: account_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: owner-index
+          KeySchema:
+            - AttributeName: owner_subject
+              KeyType: HASH
+          Projection:
+            ProjectionType: KEYS_ONLY
+        - IndexName: state-index
+          KeySchema:
+            - AttributeName: state_partition
+              KeyType: HASH
+            - AttributeName: account_id
+              KeyType: RANGE
+          Projection:
+            ProjectionType: INCLUDE
+            NonKeyAttributes:
+              - expires_ms
       TimeToLiveSpecification:
         AttributeName: expires_at
         Enabled: true
@@ -273,12 +473,16 @@ Resources:
     Properties:
       TableName: !Sub "knock-knock-${Environment}-visits"
       BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
       AttributeDefinitions:
         - AttributeName: household_id
           AttributeType: S
         - AttributeName: sort_key
           AttributeType: S
         - AttributeName: ring_request_id
+          AttributeType: S
+        - AttributeName: visit_id
           AttributeType: S
       KeySchema:
         - AttributeName: household_id
@@ -292,8 +496,12 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-      SSESpecification:
-        SSEEnabled: true
+        - IndexName: visit-id-index
+          KeySchema:
+            - AttributeName: visit_id
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
       TimeToLiveSpecification:
@@ -305,17 +513,37 @@ Resources:
     Properties:
       TableName: !Sub "knock-knock-${Environment}-event-ledger"
       BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
       AttributeDefinitions:
         - AttributeName: request_id
           AttributeType: S
       KeySchema:
         - AttributeName: request_id
           KeyType: HASH
-      SSESpecification:
-        SSEEnabled: true
       TimeToLiveSpecification:
         AttributeName: expires_at
         Enabled: true
+
+  DeviceTokensTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      TableName: !Sub "knock-knock-${Environment}-device-tokens"
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+      AttributeDefinitions:
+        - AttributeName: household_id
+          AttributeType: S
+        - AttributeName: token_fingerprint
+          AttributeType: S
+      KeySchema:
+        - AttributeName: household_id
+          KeyType: HASH
+        - AttributeName: token_fingerprint
+          KeyType: RANGE
 
   UserPool:
     Type: AWS::Cognito::UserPool
@@ -359,6 +587,26 @@ Resources:
       ExplicitAuthFlows:
         - ALLOW_USER_SRP_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - openid
+        - email
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs:
+        - !Ref CognitoCallbackUrl
+        - !Ref CognitoAndroidCallbackUrl
+      LogoutURLs:
+        - !Sub "${CognitoCallbackUrl}/complete"
+        - !Ref CognitoAndroidCallbackUrl
+
+  CognitoDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub "knock-knock-${AWS::AccountId}-${Environment}"
+      UserPoolId: !Ref UserPool
 
   RingCredentialsSecret:
     Type: AWS::SecretsManager::Secret
@@ -412,20 +660,36 @@ Resources:
                   - dynamodb:PutItem
                   - dynamodb:UpdateItem
                   - dynamodb:Query
+                  - dynamodb:TransactWriteItems
                 Resource:
                   - !GetAtt HouseholdTable.Arn
                   - !Sub "${HouseholdTable.Arn}/index/ring-account-index"
+                  - !GetAtt RingConnectionsTable.Arn
+                  - !Sub "${RingConnectionsTable.Arn}/index/state-index"
+                  - !GetAtt DeletionJobsTable.Arn
                   - !GetAtt VisitTable.Arn
                   - !Sub "${VisitTable.Arn}/index/ring-request-index"
+                  - !Sub "${VisitTable.Arn}/index/visit-id-index"
                   - !GetAtt EventLedgerTable.Arn
               - Effect: Allow
                 Action:
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                Resource: !GetAtt DeviceTokensTable.Arn
+              - Effect: Allow
+                Action:
                   - sqs:SendMessage
-                Resource: !GetAtt EventQueue.Arn
+                Resource:
+                  - !GetAtt EventQueue.Arn
+                  - !GetAtt DeletionQueue.Arn
               - Effect: Allow
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource: !Ref RingCredentialsSecret
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub "${MediaBucket.Arn}/households/*"
 
   WorkerExecutionRole:
     Type: AWS::IAM::Role
@@ -459,7 +723,9 @@ Resources:
                   - sqs:DeleteMessage
                   - sqs:GetQueueAttributes
                   - sqs:ChangeMessageVisibility
-                Resource: !GetAtt EventQueue.Arn
+                Resource:
+                  - !GetAtt EventQueue.Arn
+                  - !GetAtt DeletionQueue.Arn
         - PolicyName: WorkerData
           PolicyDocument:
             Version: "2012-10-17"
@@ -468,17 +734,28 @@ Resources:
                 Action:
                   - dynamodb:GetItem
                   - dynamodb:PutItem
+                  - dynamodb:BatchWriteItem
                   - dynamodb:UpdateItem
                   - dynamodb:Query
+                  - dynamodb:DeleteItem
                 Resource:
                   - !GetAtt HouseholdTable.Arn
                   - !Sub "${HouseholdTable.Arn}/index/ring-account-index"
+                  - !GetAtt RingConnectionsTable.Arn
                   - !GetAtt VisitTable.Arn
                   - !Sub "${VisitTable.Arn}/index/ring-request-index"
                   - !GetAtt EventLedgerTable.Arn
+                  - !GetAtt DeletionJobsTable.Arn
+                  - !Sub "${RingConnectionsTable.Arn}/index/owner-index"
+              - Effect: Allow
+                Action:
+                  - dynamodb:Query
+                  - dynamodb:DeleteItem
+                Resource: !GetAtt DeviceTokensTable.Arn
               - Effect: Allow
                 Action:
                   - s3:ListBucket
+                  - s3:ListBucketVersions
                 Resource: !GetAtt MediaBucket.Arn
                 Condition:
                   StringLike:
@@ -489,13 +766,31 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                   - s3:PutObjectTagging
+                  - s3:DeleteObject
+                  - s3:DeleteObjectVersion
                 Resource: !Sub "${MediaBucket.Arn}/households/*"
               - Effect: Allow
                 Action:
+                  - cognito-idp:AdminDeleteUser
+                Resource: !GetAtt UserPool.Arn
+              - Effect: Allow
+                Action:
                   - secretsmanager:GetSecretValue
-                Resource:
-                  - !Ref RingCredentialsSecret
-                  - !Ref FirebaseCredentialsSecret
+                Resource: !Ref RingCredentialsSecret
+              - Effect: Allow
+                Action:
+                  - rekognition:DetectFaces
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    aws:RequestedRegion: !Ref AWS::Region
+              - Effect: Allow
+                Action:
+                  - rekognition:SearchFacesByImage
+                  - rekognition:CreateCollection
+                  - rekognition:DescribeCollection
+                  - rekognition:DeleteCollection
+                Resource: !Sub "arn:${AWS::Partition}:rekognition:${AWS::Region}:${AWS::AccountId}:collection/knock-knock-${Environment}-faces-*"
 
   AlarmTopic:
     Type: AWS::SNS::Topic
@@ -512,6 +807,25 @@ Resources:
       Dimensions:
         - Name: QueueName
           Value: !GetAtt DeadLetterQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  DeletionDeadLetterAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "knock-knock-${Environment}-deletion-dlq-not-empty"
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt DeletionDeadLetterQueue.QueueName
       Statistic: Maximum
       Period: 60
       EvaluationPeriods: 1
@@ -568,6 +882,16 @@ Outputs:
     Value: !Ref UserPool
   UserPoolClientId:
     Value: !Ref UserPoolClient
+  RingAccountLinkUrl:
+    Value: !Ref CognitoCallbackUrl
+  RingTokenExchangeUrl:
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Environment}/v1/ring/oauth/token"
+  RingWebhookUrl:
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Environment}/v1/webhooks/ring"
+  CognitoDomainUrl:
+    Value: !Sub "https://knock-knock-${AWS::AccountId}-${Environment}.auth.${AWS::Region}.amazoncognito.com"
+  CognitoAndroidCallbackUrl:
+    Value: !Ref CognitoAndroidCallbackUrl
   RingSecretArn:
     Value: !Ref RingCredentialsSecret
   FirebaseSecretArn:

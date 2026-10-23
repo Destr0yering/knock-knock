@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 import httpx
 
 from knock_knock.adapters.camera.payloads import parse_ring_event
-from knock_knock.domain.models import CameraEvent, MediaClip, MediaFrame
+from knock_knock.domain.models import CameraEvent, MediaFrame
 from knock_knock.ports.camera import (
     AccessTokenProvider,
     CameraAdapter,
@@ -34,8 +34,6 @@ class RingAdapterConfig:
     max_attempts: int = 3
     max_retry_after_seconds: float = 5.0
     max_snapshot_bytes: int = 12 * 1024 * 1024
-    max_clip_bytes: int = 80 * 1024 * 1024
-    max_clip_duration_ms: int = 30_000
     allowed_media_host_suffixes: tuple[str, ...] = (
         "amazonvision.com",
         "amazonaws.com",
@@ -45,8 +43,6 @@ class RingAdapterConfig:
     def __post_init__(self) -> None:
         if self.max_attempts < 1:
             raise ValueError("max_attempts must be at least 1")
-        if not 1 <= self.max_clip_duration_ms <= 900_000:
-            raise ValueError("max_clip_duration_ms must be between 1 and 900000")
 
 
 @dataclass(frozen=True, slots=True)
@@ -231,42 +227,6 @@ class RingCameraAdapter(CameraAdapter):
             captured_at=_media_timestamp(response, event.occurred_at),
             source_event_id=event.event_id,
             device_id=event.device_id,
-        )
-
-    async def fetch_clip(self, event: CameraEvent, *, duration_ms: int = 10_000) -> MediaClip:
-        if not 1 <= duration_ms <= self._config.max_clip_duration_ms:
-            raise ValueError(
-                f"duration_ms must be between 1 and {self._config.max_clip_duration_ms}"
-            )
-        payload: dict[str, Any] = {
-            "timestamp": int(event.occurred_at.timestamp() * 1000),
-            "duration": duration_ms,
-            "video_options": {
-                "codec": "avc",
-                "frame_rate": 15,
-                "resolution": {"width": 1280, "height": 720},
-            },
-            "audio_options": {"audio_enabled": False},
-        }
-        _add_component(payload, event)
-        response = await self._download_media(
-            event,
-            endpoint="video/download",
-            payload=payload,
-            accepted_statuses={200, 206},
-            max_bytes=self._config.max_clip_bytes,
-            media_name="clip",
-        )
-        actual_duration = response.headers.get("X-Media-Length")
-        return MediaClip(
-            content=response.content,
-            content_type=response.headers.get("Content-Type", "video/mp4"),
-            captured_at=_media_timestamp(response, event.occurred_at),
-            source_event_id=event.event_id,
-            device_id=event.device_id,
-            requested_duration_ms=duration_ms,
-            actual_duration_ms=int(actual_duration) if actual_duration else None,
-            partial=response.status_code == 206,
         )
 
     async def _download_media(

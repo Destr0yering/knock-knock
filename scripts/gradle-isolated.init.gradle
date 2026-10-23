@@ -1,0 +1,10 @@
+// OneDrive can lock generated resources; keep generated output in local Temp.
+// Source and model assets stay in the repository. Never delete this root here.
+def isolatedRoot = System.getenv('KNOCK_KNOCK_BUILD_ROOT')
+if (!isolatedRoot) {
+    throw new GradleException('Set KNOCK_KNOCK_BUILD_ROOT to an absolute dedicated output directory.')
+}
+gradle.beforeProject { project ->
+    def suffix = project.path == ':' ? 'root' : project.path.substring(1).replace(':', '/')
+    project.layout.buildDirectory.set(new File(isolatedRoot, suffix))
+}

@@ -25,14 +25,20 @@ object NetworkFactory {
         }
         val sessionInterceptor = Interceptor { chain ->
             val session = sessionProvider.currentSession()
-            val request = chain.request().newBuilder()
-                .header("X-Demo-User", session.userId)
-                .apply {
-                    session.accessToken?.let { token ->
-                        header("Authorization", "Bearer $token")
-                    }
+            val requestBuilder = chain.request().newBuilder()
+            if (session.accessToken.isNullOrBlank()) {
+                requestBuilder.removeHeader("Authorization")
+                if (session.demoSession) {
+                    requestBuilder.header("X-Demo-User", session.userId)
+                } else {
+                    requestBuilder.removeHeader("X-Demo-User")
                 }
-                .build()
+            } else {
+                requestBuilder
+                    .removeHeader("X-Demo-User")
+                    .header("Authorization", "Bearer ${session.accessToken}")
+            }
+            val request = requestBuilder.build()
             chain.proceed(request)
         }
         val client = OkHttpClient.Builder()

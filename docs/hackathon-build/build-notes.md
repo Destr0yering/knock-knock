@@ -233,3 +233,100 @@
   the setup action requested Google's retired `tools` SDK package. Updated CI to request only
   `platform-tools` and upgraded the maintained checkout/Java actions before re-running the gate.
 
+### Tester readiness (October 5)
+
+- Added a first-run Android safety notice for the synthetic demo. It requires a separate age-13+
+  affirmation and synthetic-only acknowledgement before opening the demo, then records the notice
+  version and acceptance timestamp in private app preferences.
+- The notice explicitly says real Ring footage and real visitor details are not enabled by this
+  acknowledgement. The app does not present it as biometric consent or as finalized legal terms.
+- Added `docs/tester-readiness.md` with a limited pilot boundary, tester briefing checklist, open
+  deletion/withdrawal policy decisions, and a synthetic-demo recruitment message. Linked it from the
+  internal privacy inventory and README.
+- AWS role authentication is currently valid. A read-only CloudFormation check found
+  `knock-knock-dev` in `UPDATE_COMPLETE`; the `/dev/health` endpoint returned `ok` with the Ring
+  partner adapter and Rekognition engine selected.
+- Android Kotlin source compilation succeeded. Full packaging first failed because OneDrive/Windows
+  would not release the incremental resource directory. Redirecting outputs to a local temp folder
+  avoided that lock, but Gradle then hit native-memory pressure and, on a constrained retry,
+  packaging exhausted the C: drive. Removed only the temporary output from that retry; about 455 MB
+  is free again. No updated APK was produced or visually checked.
+- At that checkpoint, the account-linking endpoint was not complete: the deployed stack exposed
+  webhook and callback routes, but the backend lacked Ring's one-way exchange and partner sign-in
+  flow. The October 14 source updates below begin that implementation; they are not deployed, so
+  the Ring app is still not connected.
+
+### Resource plan and item 10 continuation (October 14)
+
+- Recorded the resource allocation in `resource-plan.md`: Codex for integration/security decisions,
+  Nano/Qwen for local scoped coding and Android builds, Docker's existing compute credit for short
+  isolated builds, OpenRouter only with explicitly free models, and AI Studio only on a confirmed
+  free-tier project. No paid AI Studio calls or purchases are authorized.
+- Began the Ring one-way flow implementation in the current worktree: added an SSE-enabled DynamoDB
+  per-account connection table, conditional pending-token claims, an atomic link-completion/owner
+  household mapping, and a per-account token store for worker refresh rotation.
+- Added the public `POST /v1/ring/oauth/token` token-exchange route and Cognito-authenticated
+  `POST /v1/ring/link/confirm`; changed the SAM event to match Ring's server-to-server POST flow.
+  The deployed Ring app is not configured to these new endpoints, and this source has not been
+  deployed or run through its validation gate.
+- Changed production actor identity resolution to use the verified Cognito ID token. The
+  `X-Demo-User` header remains confined to development/test environments.
+- Nano cannot be reached from the current Windows execution host (`ssh nano` returned permission
+  denied). No Docker cloud sandbox or model API key is configured in this shell; no build or test
+  has been run in this increment. Existing uncommitted changes remain preserved.
+- Item 10 remains unchecked. Remaining work includes a sign-in-capable Ring account-link page,
+  Cognito sign-in and Android deep-link/sync, FCM registration/delivery, API household repository
+  integration, staging setup, validation on Nano, then the already-planned cloud/device checkpoint.
+- Reviewed the Ring status record and corrected its deployment/security claims: the new DynamoDB
+  table provides AWS server-side encryption, not application-layer encryption, and earlier test
+  and Nano build results apply to older source only.
+- Resumed the Android connector work by making the network interceptor mutually exclusive: demo
+  sessions send `X-Demo-User`, while sessions with a Cognito ID token send only `Authorization`.
+  The app still uses `DemoSessionProvider`; Cognito sign-in and token refresh are not implemented.
+- Began the next Android step: replaced the hard-coded demo session provider with a native Cognito
+  Hosted UI client using authorization-code + PKCE, single-use state validation, encrypted
+  Android Keystore storage for PKCE and tokens, and refresh-token renewal. Added the Android
+  callback URI to the Cognito app-client template and wired a sign-in status/action into the demo
+  navigation. The AWS stack has not been updated and no Android build was run. To activate the
+  flow, deploy the callback change and supply the public Cognito domain and app-client ID to Gradle.
+
+### AWS CLI reauthentication and October 15 continuation
+
+- Restored CloudShell credentials for `knock-knock-deployer` using only the four launch actions plus `cloudshell:PutCredentials`; confirmed the CloudShell CLI identity with STS.
+- Rechecked `knock-knock-dev`: `UPDATE_COMPLETE`, last updated `2026-10-15T03:48:07Z`. The live `/dev/health` route returned `ok` with the Ring partner adapter and AWS Rekognition selected. This confirms the existing deployed stack is healthy; it does not confirm the latest local source is deployed.
+- Verified the Ring account remains only a staging tester. No Knock Knock account-link record or live Ring event has been observed. Firebase values/secret, FCM delivery, public privacy/terms, and self-service deletion remain outstanding.
+- Nano is reachable over SSH. Its previous APK was built from an earlier Android snapshot. A sanitized archive of the current workspace Android source was transferred with matching SHA-256, and a new `:app:assembleDebug` build is running in a separate Nano output directory. No tests or AWS deployment were run in this step.
+
+### Current Android compile and submission readiness - October 20
+
+- Built `deliverables/knock-knock-debug-20261020-configured.apk` with Cognito domain/client ID and Firebase Android client settings embedded. Size: 272,661,358 bytes; SHA-256 `CC4739C839660E4755C51CE8FA51D70D5B9E5E70488171B7BC484F0A8D5DD4AC`.
+- `:app:lintDebug`, `:app:testDebugUnitTest`, and `:app:assembleDebug` passed. Python: 96 tests passed; Ruff and mypy passed. This is a debug build. The tablet was not reachable, so install and instrumentation tests remain unverified.
+- AWS CLI reauthentication failed at the AWS sign-in endpoint. No cloud deployment, Ring account-link/event/snapshot test, or FCM delivery test was run. Firebase client settings do not configure the server FCM credential.
+- Public privacy and beta terms are not published, and full self-service cloud deletion is not available. The current shared Rekognition collection lacks household-scoped face ownership, which must be resolved before enabling account-wide biometric deletion or inviting live-data testers.
+- Submission remains blocked on the live Ring/FCM proof, tablet walkthrough, public privacy/contact/deletion path, and Devpost materials review. No Devpost submission was made.
+
+### Account-deletion continuation - October 21
+
+- Corrected the Cognito account deletion handoff: the API now takes the immutable user subject for
+  household data ownership and the verified `cognito:username` claim for Cognito's admin deletion
+  call. It sends that username only in the encrypted, short-lived deletion queue message and does
+  not fall back to treating `sub` as a username.
+- If the expected Cognito username claim is absent, the API refuses to queue deletion before any
+  data cleanup begins. A deletion worker also rejects a malformed/legacy job before modifying data.
+- No tests or deployment were run in this increment. Item 10 remains open pending its automated
+  authorization/deletion coverage, deployed integration, and owner/device walkthrough. The privacy
+  notice and beta terms remain unpublished drafts.
+- Added an owner-authenticated `GET /v1/ring/visits` read path for recent retained Ring event
+  metadata. It queries only the signed-in owner's DynamoDB partition, omits visitor names and image
+  URLs, filters expired visit records, and stops reads once account deletion is queued. The existing
+  single-visit endpoint applies the same deletion gate before returning its short-lived snapshot URL.
+- Added a recent Ring events list to the Android Ring section. It refreshes after sign-in, shows only
+  event metadata, and fetches a snapshot only after the owner taps an event. The Ring event API is
+  already covered by the SAM `/v1/{proxy+}` route, so no CloudFormation resource change was needed.
+- The history marks snapshots expired at 30 days and the snapshot endpoint rejects expired image
+  retrievals, while the one-year text visit remains listed.
+- Corrected the Ring worker's zero-face case so it reports zero detected faces instead of inventing
+  a count of one; the Android still-review message now says the number of people is unknown.
+- No tests or deployment were run for this increment. Source-level history and still review are not
+  yet device-verified, and the cloud endpoint remains unavailable until the local source is deployed.
+
