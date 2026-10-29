@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Credential-less local-development user for Knock Knock
+Description: Credential-less local-development user for DoorMemo
 
 Resources:
   DeploymentUser:
@@ -16,6 +16,28 @@ Resources:
               - Effect: Allow
                 Action: sts:AssumeRole
                 Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/KnockKnockDeploymentRole"
+        - PolicyName: ManageOwnVirtualMFA
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ListVirtualMFADevices
+                Effect: Allow
+                Action:
+                  - iam:ListVirtualMFADevices
+                Resource: "*"
+              - Sid: CreateVirtualMFADevice
+                Effect: Allow
+                Action:
+                  - iam:CreateVirtualMFADevice
+                Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:mfa/${!aws:username}"
+              - Sid: ManageOwnMFA
+                Effect: Allow
+                Action:
+                  - iam:EnableMFADevice
+                  - iam:GetMFADevice
+                  - iam:ListMFADevices
+                  - iam:ResyncMFADevice
+                Resource: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:user/${!aws:username}"
       Tags:
         - Key: Project
           Value: KnockKnock

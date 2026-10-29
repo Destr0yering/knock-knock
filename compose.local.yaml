@@ -1,0 +1,36 @@
+# Isolated synthetic harness, not a server for the private Android records.
+name: knock-knock-synthetic
+x-harness: &harness
+  build:
+    context: .
+    dockerfile: infra/local/Dockerfile
+  env_file: .env.local.example
+  environment:
+    KNOCK_KNOCK_PROFILE_CONFIG_PATH: /tmp/knock-knock/profiles.yaml
+    KNOCK_KNOCK_VISITOR_LOG_PATH: /tmp/knock-knock/visitors.jsonl
+    KNOCK_KNOCK_SHARED_STATE_PATH: /tmp/knock-knock/household.json
+    KNOCK_KNOCK_FACE_DATASET_DIR: /tmp/knock-knock/faces
+  read_only: true
+  tmpfs:
+    - /tmp:rw,nosuid,nodev,size=128m,mode=1777
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  networks: [synthetic]
+
+services:
+  simulator:
+    <<: *harness
+    ports: ["127.0.0.1:8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  backend-tests:
+    <<: *harness
+    profiles: [test]
+    command: ["python", "-m", "pytest", "-p", "no:cacheprovider"]
+
+networks:
+  synthetic:
+    internal: true

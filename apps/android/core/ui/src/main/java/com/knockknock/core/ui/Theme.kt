@@ -1,6 +1,5 @@
 package com.knockknock.core.ui
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -11,14 +10,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val Pine = Color(0xFF183A32)
-val PineLight = Color(0xFF2F6658)
-val Mint = Color(0xFFDCEEE5)
-val Cream = Color(0xFFF7F3E8)
-val Paper = Color(0xFFFFFCF5)
-val Amber = Color(0xFFF4B942)
-val Ink = Color(0xFF17231F)
-val MutedInk = Color(0xFF586660)
+val Pine = Color(0xFF155C4B)
+val PineLight = Color(0xFF438C76)
+val Mint = Color(0xFFDDEFE5)
+val Cream = Color(0xFFF5F6F1)
+val Paper = Color(0xFFFFFFFF)
+val Amber = Color(0xFFF1BD70)
+val Ink = Color(0xFF19231F)
+val MutedInk = Color(0xFF66716B)
 val AlertRed = Color(0xFF9C3B3B)
 
 private val LightColors = lightColorScheme(
@@ -33,8 +32,10 @@ private val LightColors = lightColorScheme(
     onBackground = Ink,
     surface = Paper,
     onSurface = Ink,
-    surfaceVariant = Color(0xFFE9E9DF),
+    surfaceVariant = Color(0xFFEAF2EE),
     onSurfaceVariant = MutedInk,
+    outline = Color(0xFFAAB8B0),
+    outlineVariant = Color(0xFFDCE5DF),
     error = AlertRed,
 )
 
@@ -48,24 +49,15 @@ private val DarkColors = darkColorScheme(
     surface = Color(0xFF17211D),
 )
 
-private val KnockKnockTypography = androidx.compose.material3.Typography(
+private val DoorMemoTypography = androidx.compose.material3.Typography(
     displaySmall = TextStyle(
         fontFamily = FontFamily.Serif,
         fontWeight = FontWeight.Bold,
         fontSize = 36.sp,
         lineHeight = 40.sp,
     ),
-    headlineSmall = TextStyle(
-        fontFamily = FontFamily.Serif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 25.sp,
-        lineHeight = 30.sp,
-    ),
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.Serif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 21.sp,
-    ),
+    headlineSmall = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 26.sp, lineHeight = 31.sp),
+    titleLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 20.sp, lineHeight = 26.sp),
     titleMedium = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 16.sp),
     bodyLarge = TextStyle(fontSize = 16.sp, lineHeight = 23.sp),
     bodyMedium = TextStyle(fontSize = 14.sp, lineHeight = 20.sp),
@@ -73,13 +65,14 @@ private val KnockKnockTypography = androidx.compose.material3.Typography(
 )
 
 @Composable
-fun KnockKnockTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+fun DoorMemoTheme(
+    // Keep the demo bright and readable even when the tablet is using dark mode.
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
-        typography = KnockKnockTypography,
+        typography = DoorMemoTypography,
         content = content,
     )
 }

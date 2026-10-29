@@ -9,6 +9,7 @@ import pytest
 
 from knock_knock.adapters.media.s3 import S3WorkerMediaStore
 from knock_knock.adapters.vision.aws_rekognition import AwsRekognitionFaceIdEngine
+from knock_knock.aws.ring_pipeline import deserialize_camera_event
 from knock_knock.aws.worker import lambda_handler, reset_record_processor, set_record_processor
 from knock_knock.domain.models import (
     BoundingBox,
@@ -155,6 +156,14 @@ async def test_learning_requires_owner_approval_deduplicates_and_suppresses_conf
 
 
 class FakeRekognitionClient:
+    class exceptions:
+        ResourceNotFoundException = type("ResourceNotFoundException", (Exception,), {})
+        ResourceAlreadyExistsException = type("ResourceAlreadyExistsException", (Exception,), {})
+
+    def describe_collection(self, **kwargs: Any) -> dict[str, Any]:
+        assert kwargs["CollectionId"] == "collection"
+        return {}
+
     def detect_faces(self, **kwargs: Any) -> dict[str, Any]:
         assert kwargs["Attributes"] == ["DEFAULT"]
         return {
@@ -225,6 +234,25 @@ async def test_s3_worker_store_enforces_scope_bounds_encryption_and_retention() 
     assert client.put is not None
     assert client.put["ServerSideEncryption"] == "aws:kms"
     assert client.put["Tagging"] == "retention=30d"
+
+
+def test_worker_deserializes_durable_ring_event_message() -> None:
+    event = deserialize_camera_event(
+        {
+            "event_id": "event-1",
+            "request_id": "request-1",
+            "account_id": "account-1",
+            "device_id": "door-1",
+            "event_type": "motion_detected",
+            "occurred_at": "2026-10-03T12:00:00+00:00",
+            "component_ids": ["camera-1"],
+            "metadata": {"webhook_version": "1"},
+        }
+    )
+
+    assert event.request_id == "request-1"
+    assert event.device_id == "door-1"
+    assert event.component_ids == ("camera-1",)
 
 
 def test_sqs_partial_batch_failure_reports_only_failed_record() -> None:

@@ -102,7 +102,9 @@ def test_execution_roles_are_split_and_have_no_bare_wildcard_resource() -> None:
             statements = policy["PolicyDocument"]["Statement"]
             for statement in statements:
                 resource = statement.get("Resource")
-                assert resource != "*"
+                if resource == "*":
+                    assert statement["Action"] == ["rekognition:DetectFaces"]
+                    assert statement["Condition"]["StringEquals"]["aws:RequestedRegion"]
                 if isinstance(resource, list):
                     assert "*" not in resource
 

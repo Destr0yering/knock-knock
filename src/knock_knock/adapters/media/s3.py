@@ -26,24 +26,42 @@ class S3WorkerMediaStore:
         content: bytes,
     ) -> str:
         key = f"households/{household_id}/visits/{visit_id}/faces/{person_key}-{index}.jpg"
-        await asyncio.to_thread(self._save_sync, key, content)
+        await asyncio.to_thread(self._save_sync, key, content, "image/jpeg")
+        return key
+
+    async def save_source(
+        self,
+        *,
+        household_id: str,
+        visit_id: str,
+        content: bytes,
+        content_type: str,
+    ) -> str:
+        if content_type.split(";", 1)[0].strip().lower() not in {"image/jpeg", "image/jpg"}:
+            raise ValueError("Ring visit source must be a JPEG snapshot; video is not accepted")
+        key = f"households/{household_id}/visits/{visit_id}/source.jpg"
+        await asyncio.to_thread(self._save_sync, key, content, "image/jpeg")
         return key
 
     def _load_sync(self, key: str, max_bytes: int) -> tuple[bytes, str]:
         if not key.startswith("households/"):
             raise ValueError("Media key must be household scoped")
         response = self._client.get_object(Bucket=self._bucket, Key=key)
-        content = response["Body"].read(max_bytes + 1)
+        body = response["Body"]
+        try:
+            content = body.read(max_bytes + 1)
+        finally:
+            body.close()
         if len(content) > max_bytes:
             raise ValueError("Media exceeds worker byte limit")
         return bytes(content), str(response.get("ContentType", "application/octet-stream"))
 
-    def _save_sync(self, key: str, content: bytes) -> None:
+    def _save_sync(self, key: str, content: bytes, content_type: str) -> None:
         arguments: dict[str, Any] = {
             "Bucket": self._bucket,
             "Key": key,
             "Body": content,
-            "ContentType": "image/jpeg",
+            "ContentType": content_type,
             "ServerSideEncryption": "aws:kms",
             "Tagging": "retention=30d",
             "Metadata": {"sha256": hashlib.sha256(content).hexdigest()},

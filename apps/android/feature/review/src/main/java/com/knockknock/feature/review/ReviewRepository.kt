@@ -75,6 +75,31 @@ class ReviewRepository(
         append(personId, "PHOTO_SAVED", "Photo retained beyond the 30-day review window")
     }
 
+    suspend fun saveAsUnnamedProfile(personId: String) {
+        val now = clock.instant()
+        val profileId = "profile-$personId"
+        reviews.upsertProfile(
+            FamiliarProfile(
+                id = profileId,
+                name = "Unnamed visitor",
+                sampleCount = 1,
+                updatedAt = now,
+            ),
+        )
+        reviews.updatePerson(
+            personId = personId,
+            state = ReviewState.CONFIRMED,
+            confirmedProfileId = profileId,
+            saved = true,
+        )
+        append(
+            personId = personId,
+            action = "PROFILE_CREATED_UNNAMED",
+            detail = "Saved a familiar profile without a name; rename it later when ready",
+            profileId = profileId,
+        )
+    }
+
     suspend fun proposeProfile(visitId: String, personId: String, name: String): Boolean {
         val cleanName = name.trim()
         if (cleanName.isBlank()) return false

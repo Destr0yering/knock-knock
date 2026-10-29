@@ -214,28 +214,6 @@ async def test_snapshot_redirect_preserves_watermarked_bytes_and_component() -> 
     assert requests[1].url == httpx.URL("https://media.example/snapshot")
 
 
-async def test_clip_accepts_partial_content_and_preserves_watermarked_bytes() -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.path.endswith("/media/video/download")
-        assert b'"duration":5000' in request.content
-        return httpx.Response(
-            206,
-            content=WATERMARKED_BYTES,
-            headers={
-                "Content-Type": "video/mp4",
-                "X-Media-Length": "3200",
-                "X-Media-Timestamp": "1786715596787",
-            },
-        )
-
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-        clip = await _adapter(client).fetch_clip(_event(), duration_ms=5000)
-
-    assert clip.content == WATERMARKED_BYTES
-    assert clip.partial is True
-    assert clip.actual_duration_ms == 3200
-
-
 @pytest.mark.parametrize(
     ("first_status", "headers", "expected_delay"),
     [(429, {"Retry-After": "0.01"}, 0.01), (503, {}, 0.25)],

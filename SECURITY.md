@@ -1,6 +1,6 @@
 # Security policy
 
-Knock Knock processes security-camera events and biometric-derived identifiers. Treat every report
+DoorMemo processes security-camera events and biometric-derived identifiers. Treat every report
 as potentially sensitive, even though this repository contains only synthetic fixtures.
 
 ## Reporting a vulnerability

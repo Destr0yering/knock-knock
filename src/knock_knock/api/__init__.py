@@ -1,2 +1,2 @@
-"""FastAPI transport for Knock Knock."""
+"""FastAPI transport for DoorMemo."""
 

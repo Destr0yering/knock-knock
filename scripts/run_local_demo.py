@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -9,12 +10,18 @@ from fastapi.testclient import TestClient
 
 from knock_knock.api.main import create_app
 from knock_knock.infrastructure.config import Settings
+from knock_knock.services.nebius_demo import summarize_synthetic_visit
 
 OWNER = {"X-Demo-User": "demo-owner"}
 MEMBER = {"X-Demo-User": "demo-member"}
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Run DoorMemo's synthetic visitor demo")
+    parser.add_argument(
+        "--nebius", action="store_true", help="Send the synthetic event count to Nebius"
+    )
+    args = parser.parse_args()
     with TemporaryDirectory(prefix="knock-knock-demo-") as directory:
         root = Path(directory)
         settings = Settings(
@@ -72,6 +79,10 @@ def main() -> None:
                 "saved_media": saved,
                 "audit_event_types": [item["event_type"] for item in audit],
             }
+            if args.nebius:
+                output["nebius_synthetic_summary"] = summarize_synthetic_visit(
+                    int(visit["person_count"])
+                )
             print(json.dumps(output, indent=2))
 
 

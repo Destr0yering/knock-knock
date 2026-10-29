@@ -12,15 +12,29 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProfileEntity::class,
         ProposalEntity::class,
         AuditEntity::class,
+        PrivateMediaEntity::class,
+        PrivateReferenceEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class KnockKnockDatabase : RoomDatabase() {
     abstract fun visitDao(): VisitDao
     abstract fun reviewDao(): ReviewDao
+    abstract fun privateDao(): PrivateDao
 
     companion object {
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS private_media (id TEXT NOT NULL PRIMARY KEY, visitId TEXT NOT NULL, personId TEXT NOT NULL, vaultId TEXT NOT NULL, sha256 TEXT NOT NULL, capturedAt TEXT NOT NULL, expiresAt TEXT NOT NULL, saved INTEGER NOT NULL, embedding BLOB NOT NULL)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_private_media_visitId ON private_media(visitId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_private_media_personId ON private_media(personId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_private_media_expiresAt ON private_media(expiresAt)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS private_references (id TEXT NOT NULL PRIMARY KEY, profileId TEXT NOT NULL, personId TEXT NOT NULL, vaultId TEXT NOT NULL, embedding BLOB NOT NULL, enrolledAt TEXT NOT NULL)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_private_references_profileId ON private_references(profileId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_private_references_personId ON private_references(personId)")
+            }
+        }
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(

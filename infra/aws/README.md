@@ -39,6 +39,10 @@ use short-lived `aws login` credentials and assume only `KnockKnockDeploymentRol
 one-hour sessions, requires that user's MFA, has AWS `PowerUserAccess`, and can manage/pass only
 CloudFormation-generated `knock-knock-dev-*` execution roles.
 
+The user bootstrap also grants narrowly scoped permissions to enroll and manage only its own
+virtual MFA device. An account owner or administrator must deploy/update the bootstrap stack once,
+then enroll MFA from the IAM user's Security credentials page before deployment.
+
 Assume `KnockKnockDeploymentRole` before deploying the application stack. Do not deploy the
 application as the root identity.
 
@@ -58,6 +62,22 @@ put-secret-value`; never place secret values in this repository or a shell histo
 ```powershell
 $api = aws cloudformation describe-stacks --stack-name knock-knock-dev --query "Stacks[0].Outputs[?OutputKey=='ApiBaseUrl'].OutputValue" --output text
 Invoke-RestMethod "$api/health"
+
+# Equivalent repository smoke test (read-only)
+python scripts/smoke_deployed_api.py --url $api
+
+## Configure secrets safely
+
+The stack creates an empty Secrets Manager record for Ring and a legacy empty Firebase record.
+Ring credentials still use the interactive helper below. FCM now uses AWS-to-Google Workload
+Identity Federation and does not need a Firebase service-account key:
+
+```powershell
+.\scripts\configure_aws_secrets.ps1
+```
+
+Do not put Ring tokens, OAuth client secrets, HMAC keys, or Firebase service-account JSON in
+`.env`, source files, shell history, screenshots, or GitHub issues.
 ```
 
 ## Teardown

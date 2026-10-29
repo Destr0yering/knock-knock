@@ -11,9 +11,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class TimelineLaunchTest {
     @get:Rule val composeRule = createAndroidComposeRule<MainActivity>()
-
-    @Test
-    fun learningBannerIsVisible() {
-        composeRule.onNodeWithText("Learning mode · Day 1 of 30").assertIsDisplayed()
+    @Test fun privateRecordsAreHiddenUntilDeviceOwnerUnlocks() {
+        composeRule.onNodeWithText("Unlock private journal").assertIsDisplayed()
+        composeRule.onNodeWithText("Import image").assertDoesNotExist()
+        composeRule.onNodeWithText("Export records").assertDoesNotExist()
     }
 }

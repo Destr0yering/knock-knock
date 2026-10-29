@@ -28,5 +28,20 @@ class DatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun migrate2To3PreservesProfilesAndAddsPrivateMediaTables() {
+        helper.createDatabase(DB_NAME, 2).use { db ->
+            db.execSQL("INSERT INTO profiles VALUES ('retained', 'Visitor', 0, '2026-10-05T00:00:00Z')")
+        }
+        helper.runMigrationsAndValidate(DB_NAME, 3, true, KnockKnockDatabase.MIGRATION_2_3).use { db ->
+            db.query("SELECT name FROM profiles WHERE id = 'retained'").use { cursor ->
+                org.junit.Assert.assertTrue(cursor.moveToFirst())
+                org.junit.Assert.assertEquals("Visitor", cursor.getString(0))
+            }
+            db.query("SELECT COUNT(*) FROM private_media").close()
+            db.query("SELECT COUNT(*) FROM private_references").close()
+        }
+    }
+
     private companion object { const val DB_NAME = "migration-test" }
 }

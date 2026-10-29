@@ -4,4 +4,4 @@ from mangum import Mangum
 
 from knock_knock.api.main import app
 
-handler = Mangum(app, lifespan="auto")
+handler = Mangum(app, lifespan="auto", api_gateway_base_path="/dev")

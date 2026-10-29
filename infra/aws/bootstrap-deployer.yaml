@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: MFA-gated deployment role for the Knock Knock development stack
+Description: MFA-gated deployment role for the DoorMemo development stack
 
 Parameters:
   DeploymentUserArn:
@@ -11,7 +11,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: KnockKnockDeploymentRole
-      Description: Short-lived deployment role for the Knock Knock development stack
+      Description: Short-lived deployment role for the DoorMemo development stack
       MaxSessionDuration: 3600
       AssumeRolePolicyDocument:
         Version: "2012-10-17"

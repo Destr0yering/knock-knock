@@ -1,0 +1,3 @@
+allprojects { p ->
+    p.layout.buildDirectory.set(new File(rootDir, ".codex-build/${p.path.replace(':', '_')}"))
+}

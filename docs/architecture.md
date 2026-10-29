@@ -1,4 +1,4 @@
-# Knock Knock architecture
+# DoorMemo architecture
 
 ## Design rules
 

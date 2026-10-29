@@ -78,6 +78,7 @@ data class VisitSummary(
 enum class TimelineFilter(val label: String) {
     ALL("All"),
     FAMILIAR("Familiar"),
+    DELIVERIES("Deliveries"),
     UNKNOWN("Unknown"),
     FACE_UNDETECTED("Face undetected"),
     UNRESOLVED("Needs review"),
@@ -165,6 +166,7 @@ fun VisitSummary.matches(filter: TimelineFilter): Boolean = when (filter) {
     TimelineFilter.FAMILIAR -> people.any {
         it.reviewState == ReviewState.CONFIRMED || it.reviewState == ReviewState.CORRECTED
     }
+    TimelineFilter.DELIVERIES -> eventType == "delivery_demo"
     TimelineFilter.UNKNOWN -> people.any { it.reviewState == ReviewState.UNKNOWN }
     TimelineFilter.FACE_UNDETECTED -> people.any { it.reviewState == ReviewState.FACE_UNDETECTED }
     TimelineFilter.UNRESOLVED -> people.any {

@@ -1,9 +1,7 @@
 package com.knockknock.app
 
 import android.app.Application
-import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
@@ -15,17 +13,14 @@ class KnockKnockApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
-        val refresh = PeriodicWorkRequestBuilder<VisitRefreshWorker>(6, TimeUnit.HOURS)
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .build(),
-            )
-            .build()
+        FirebaseSetup.initialize(this)
+        // Cancel an older install's cloud refresh. Private mode never schedules remote work.
+        WorkManager.getInstance(this).cancelUniqueWork("visit-refresh")
+        runCatching { cleanupRecordExports(java.io.File(cacheDir, "record-exports")) }
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "visit-refresh",
+            "local-export-cleanup",
             ExistingPeriodicWorkPolicy.KEEP,
-            refresh,
+            PeriodicWorkRequestBuilder<ExportCleanupWorker>(15, TimeUnit.MINUTES).build(),
         )
     }
 }

@@ -1,8 +1,14 @@
-# Knock Knock
+# DoorMemo
 
-> **Know who's at the door before the knock knock!**
+> **A clear record of every visitor.**
 
-Knock Knock is a privacy-conscious visitor-awareness foundation for homes and businesses. A Ring
+The current Android privacy build is an owner-controlled **local image-import
+journal** with encrypted storage and bundled on-device face AI. Its private
+records do not use the legacy cloud service below, and Ring is not connected in
+this build. See [private Android build and tests](docs/private-android-testing.md)
+for setup, current capabilities, and the limits of exports and recognition.
+
+DoorMemo is a privacy-conscious visitor-awareness foundation for homes and businesses. A Ring
 motion or doorbell event yields a freeze frame, a swappable vision engine suggests a familiar
 profile or `unknown`, and the user remains responsible for confirming, correcting, and categorizing
 the result.
@@ -40,7 +46,9 @@ CameraAdapter -> EventQueue -> VisitorPipeline -> FaceIdEngine
 See [docs/architecture.md](docs/architecture.md) for boundaries and the complete data lifecycle.
 Security and privacy details are documented in [SECURITY.md](SECURITY.md),
 [docs/threat-model.md](docs/threat-model.md), and
-[docs/privacy-and-retention.md](docs/privacy-and-retention.md).
+[docs/privacy-and-retention.md](docs/privacy-and-retention.md). The controlled synthetic pilot
+boundary and tester-readiness gaps are tracked in
+[docs/tester-readiness.md](docs/tester-readiness.md).
 
 ## Stack
 
@@ -77,6 +85,23 @@ Run the complete credential-free, three-person workflow without starting a serve
 python scripts/run_local_demo.py
 ```
 
+### Nebius hackathon preview
+
+The optional local interactive demo, `scripts/nebius_review_demo.py`, runs a
+synthetic review and uses NVIDIA Nemotron through Nebius Token Factory to
+summarize only a fabricated count and generic review status. No visitor photos,
+names, or Ring data are sent. It is separate from the private Android journal.
+Supply `NEBIUS_API_KEY` securely at runtime (use `asm-exec` with a Secrets
+Manager dynamic reference in this workspace), then run:
+
+```powershell
+python scripts/nebius_review_demo.py
+```
+
+Open `http://127.0.0.1:8765/` on the same computer. Each click makes a metered
+Nebius request. This is a localhost-only preview, not an authenticated public
+service. The generated summary does not confirm anyone's identity.
+
 The script uses the media-free `group-arrival` manifest, submits a member profile proposal,
 proves that the member cannot approve it, applies the owner's approval, saves one photo, and prints
 the resulting append-only audit event types. For manual API exploration, send
@@ -108,7 +133,7 @@ intentionally separate from local setup because it creates metered AWS resources
 
 ## Ring authentication and webhooks
 
-Knock Knock targets the **official Ring Partner API** rather than asking a user for a Ring password.
+DoorMemo targets the **official Ring Partner API** rather than asking a user for a Ring password.
 Register the app in the [Amazon Developer Portal](https://developer.amazon.com/ring/console/apps),
 implement Ring OAuth account linking, and keep the client secret, access/refresh tokens, and HMAC
 key in a server-side secret store. The service base URL is `https://api.amazonvision.com`; the OAuth
@@ -208,7 +233,7 @@ sequence is:
 git init -b main
 git add .
 git status --short
-git commit -m "chore: scaffold Knock Knock architecture"
+git commit -m "chore: scaffold DoorMemo architecture"
 ```
 
 If `git init` created `master` on an older Git version, run `git branch -M main` before committing.
@@ -227,6 +252,6 @@ three fallback paths are documented in [docs/demo-rehearsal.md](docs/demo-rehear
 
 ## License
 
-Knock Knock is available under the [MIT License](LICENSE). This license covers the software only;
+DoorMemo is available under the [MIT License](LICENSE). This license covers the software only;
 it does not grant rights to Ring/Amazon trademarks, third-party media, or biometric data.
 

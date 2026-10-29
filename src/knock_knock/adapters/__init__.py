@@ -1,2 +1,2 @@
-"""Concrete integrations for Knock Knock ports."""
+"""Concrete integrations for DoorMemo ports."""
 

@@ -1,4 +1,4 @@
-# Knock Knock threat model
+# DoorMemo threat model
 
 ## Scope and trust boundaries
 

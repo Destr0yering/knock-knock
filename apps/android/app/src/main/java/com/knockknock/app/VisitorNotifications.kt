@@ -16,7 +16,6 @@ import com.knockknock.core.model.VisitorAlert
 interface VisitorNotificationGateway {
     fun showVisitAlert(visitId: String, alert: VisitorAlert): Boolean
 }
-
 class LocalVisitorNotificationGateway(private val context: Context) : VisitorNotificationGateway {
     override fun showVisitAlert(visitId: String, alert: VisitorAlert): Boolean {
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -35,20 +34,24 @@ class LocalVisitorNotificationGateway(private val context: Context) : VisitorNot
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(alert.title)
-            .setContentText(alert.body)
+            .setContentTitle("DoorMemo visitor event")
+            .setContentText("Unlock your private journal to review.")
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(
+                NotificationCompat.Builder(context, CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle("DoorMemo")
+                    .setContentText("A visitor event is ready.")
+                    .build(),
+            )
             .setContentIntent(pending)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
             .build()
         NotificationManagerCompat.from(context).notify(visitId.hashCode(), notification)
         return true
     }
 
     private companion object { const val CHANNEL_ID = "visitor-alerts" }
-}
-
-// The future FCM service implements this boundary after validating the server-created payload.
-interface FcmVisitMessageHandler {
-    fun onVisitMessage(visitId: String, title: String, body: String)
 }

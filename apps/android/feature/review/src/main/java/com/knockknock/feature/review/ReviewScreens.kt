@@ -1,6 +1,7 @@
 package com.knockknock.feature.review
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -42,6 +44,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -68,6 +72,7 @@ fun VisitReviewRoute(
         onFaceUndetected = viewModel::markFaceUndetected,
         onConfirm = viewModel::confirm,
         onSavePhoto = viewModel::savePhoto,
+        onSaveAsUnnamedProfile = viewModel::saveAsUnnamedProfile,
         onPropose = viewModel::propose,
     )
 }
@@ -83,6 +88,7 @@ fun VisitReviewScreen(
     onFaceUndetected: (String) -> Unit,
     onConfirm: (String, FamiliarProfile) -> Unit,
     onSavePhoto: (String) -> Unit,
+    onSaveAsUnnamedProfile: (String) -> Unit,
     onPropose: (String, String) -> Unit,
 ) {
     Scaffold(
@@ -117,18 +123,29 @@ fun VisitReviewScreen(
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                "AI suggestions are clues, not facts. Confirm each person to help Knock Knock learn.",
+                "AI suggestions are clues, not facts. Confirm each person to help DoorMemo learn.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             state.visit?.people?.forEachIndexed { index, person ->
                 PersonReviewCard(
                     index = index,
+                    demoImage = when (state.visit?.id) {
+                        "offline-demo-group-arrival" -> when (index) {
+                            0 -> R.drawable.demo_known
+                            1 -> R.drawable.demo_unknown
+                            else -> R.drawable.demo_undetected
+                        }
+                        "offline-demo-delivery" -> R.drawable.demo_undetected
+                        "offline-demo-unknown" -> R.drawable.demo_unknown
+                        else -> null
+                    },
                     person = person,
                     profiles = state.profiles,
                     onUnknown = { onUnknown(person.id) },
                     onFaceUndetected = { onFaceUndetected(person.id) },
                     onConfirm = { onConfirm(person.id, it) },
                     onSavePhoto = { onSavePhoto(person.id) },
+                    onSaveAsUnnamedProfile = { onSaveAsUnnamedProfile(person.id) },
                     onPropose = { onPropose(person.id, it) },
                 )
             }
@@ -160,12 +177,14 @@ private fun RoleSelector(role: HouseholdRole, onRole: (HouseholdRole) -> Unit) {
 @Composable
 private fun PersonReviewCard(
     index: Int,
+    demoImage: Int?,
     person: PersonSummary,
     profiles: List<FamiliarProfile>,
     onUnknown: () -> Unit,
     onFaceUndetected: () -> Unit,
     onConfirm: (FamiliarProfile) -> Unit,
     onSavePhoto: () -> Unit,
+    onSaveAsUnnamedProfile: () -> Unit,
     onPropose: (String) -> Unit,
 ) {
     var name by remember(person.id) { mutableStateOf("") }
@@ -181,11 +200,16 @@ private fun PersonReviewCard(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(16.dp))
-                        .padding(14.dp),
-                ) { Icon(Icons.Rounded.Person, contentDescription = null) }
+                if (demoImage != null) {
+                    Image(
+                        painter = painterResource(demoImage),
+                        contentDescription = "Synthetic demo visitor image",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(84.dp)
+                            .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(16.dp)),
+                    )
+                }
                 Column(Modifier.padding(start = 12.dp)) {
                     Text("Person ${index + 1}", style = MaterialTheme.typography.titleLarge)
                     Text(
@@ -219,6 +243,10 @@ private fun PersonReviewCard(
                 AssistChip(
                     onClick = onSavePhoto,
                     label = { Text(if (person.saved) "Photo saved" else "Save photo") },
+                )
+                AssistChip(
+                    onClick = onSaveAsUnnamedProfile,
+                    label = { Text("Save as unnamed profile") },
                 )
             }
             OutlinedTextField(

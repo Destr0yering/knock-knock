@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     ring_access_token: SecretStr = SecretStr("")
     ring_refresh_token: SecretStr = SecretStr("")
     ring_account_id: str = ""
+    ring_connections_table: str = ""
+    cognito_user_pool_id: str = ""
+    cognito_client_id: str = ""
+    cognito_domain_url: str = ""
 
     vision_backend: Literal["opencv", "aws", "stub"] = "stub"
     face_match_threshold: float = Field(default=0.62, ge=0.0, le=1.0)
@@ -37,6 +41,17 @@ class Settings(BaseSettings):
 
     aws_region: str = "us-east-1"
     aws_rekognition_collection_id: str = "knock-knock-faces"
+    visit_table: str = ""
+    household_table: str = ""
+    event_ledger_table: str = ""
+    media_bucket: str = ""
+    event_queue_url: str = ""
+    ring_secret_arn: str = ""
+    firebase_secret_arn: str = ""
+    device_tokens_table: str = ""
+    deletion_jobs_table: str = ""
+    public_developer_name: str = ""
+    privacy_contact_email: str = ""
 
     profile_config_path: Path = Path("config/known_faces.yaml")
     visitor_log_path: Path = Path("data/visitors.jsonl")

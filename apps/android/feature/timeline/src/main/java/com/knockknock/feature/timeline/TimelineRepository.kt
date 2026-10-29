@@ -2,7 +2,6 @@ package com.knockknock.feature.timeline
 
 import com.knockknock.core.database.VisitCache
 import com.knockknock.core.model.VisitSummary
-import com.knockknock.core.network.FixtureRequestDto
 import com.knockknock.core.network.KnockKnockApi
 import kotlinx.coroutines.flow.Flow
 
@@ -13,12 +12,14 @@ data class SyncResult(
 
 class TimelineRepository(
     private val cache: VisitCache,
-    private val api: KnockKnockApi,
+    private val api: KnockKnockApi? = null,
 ) {
     val visits: Flow<List<VisitSummary>> = cache.observeVisits()
 
-    suspend fun refresh(): SyncResult = runCatching {
-        val remote = api.listVisits().map { it.toDomain() }
+    suspend fun refresh(): SyncResult {
+        val remoteApi = api ?: return SyncResult(offline = true, message = "Synthetic demo stays on this device.")
+        return runCatching {
+        val remote = remoteApi.listVisits().map { it.toDomain() }
         cache.replaceAll(remote)
     }.fold(
         onSuccess = { SyncResult(offline = false) },
@@ -29,18 +30,10 @@ class TimelineRepository(
             )
         },
     )
+    }
 
-    suspend fun runDemo(): SyncResult = runCatching {
-        val created = api.createDemoEvent(FixtureRequestDto()).toDomain()
-        cache.upsert(created)
-    }.fold(
-        onSuccess = { SyncResult(offline = false) },
-        onFailure = {
-            cache.seedOfflineDemo()
-            SyncResult(
-                offline = true,
-                message = "Loaded the private offline fixture. Connect the local API to sync.",
-            )
-        },
-    )
+    suspend fun runDemo(scenario: String): SyncResult {
+        cache.seedDemoScenario(scenario)
+        return SyncResult(offline = true, message = "Synthetic $scenario visit added for review.")
+    }
 }

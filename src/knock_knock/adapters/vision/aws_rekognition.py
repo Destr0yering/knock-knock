@@ -44,6 +44,7 @@ class AwsRekognitionFaceIdEngine(FaceIdEngine, FaceDetector):
         await asyncio.to_thread(self._remove_profile_sync, profile_id)
 
     def _identify_sync(self, content: bytes) -> RecognitionResult:
+        self._ensure_collection()
         response = self._client.search_faces_by_image(
             CollectionId=self._collection_id,
             Image={"Bytes": content},
@@ -96,6 +97,7 @@ class AwsRekognitionFaceIdEngine(FaceIdEngine, FaceDetector):
         return sorted(detected, key=lambda item: item.bounding_box.left)
 
     def _enroll_sync(self, profile_id: str, frames: Sequence[bytes]) -> int:
+        self._ensure_collection()
         accepted = 0
         for content in frames:
             response = self._client.index_faces(
@@ -123,4 +125,13 @@ class AwsRekognitionFaceIdEngine(FaceIdEngine, FaceDetector):
                 CollectionId=self._collection_id,
                 FaceIds=face_ids[start : start + 4096],
             )
+
+    def _ensure_collection(self) -> None:
+        try:
+            self._client.describe_collection(CollectionId=self._collection_id)
+        except self._client.exceptions.ResourceNotFoundException:
+            try:
+                self._client.create_collection(CollectionId=self._collection_id)
+            except self._client.exceptions.ResourceAlreadyExistsException:
+                pass
 

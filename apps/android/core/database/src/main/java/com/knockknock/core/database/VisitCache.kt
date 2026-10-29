@@ -32,6 +32,17 @@ class VisitCache(private val dao: VisitDao) {
         return visit
     }
 
+    suspend fun seedDemoScenario(scenario: String): VisitSummary {
+        val visit = when (scenario) {
+            "family" -> offlineDemoVisit()
+            "delivery" -> offlineDeliveryVisit()
+            "unknown" -> offlineUnknownVisit()
+            else -> throw IllegalArgumentException("Unknown demo scenario")
+        }
+        upsert(visit)
+        return visit
+    }
+
     suspend fun ensureOfflineDemo(): VisitSummary =
         dao.getById("offline-demo-group-arrival")?.toDomain() ?: seedOfflineDemo()
 }
@@ -137,6 +148,38 @@ fun offlineDemoVisit(): VisitSummary = VisitSummary(
             saved = false,
             version = 1,
         ),
+    ),
+    version = 1,
+)
+
+fun offlineDeliveryVisit(): VisitSummary = VisitSummary(
+    id = "offline-demo-delivery",
+    eventType = "delivery_demo",
+    occurredAt = Instant.now(),
+    status = VisitStatus.READY,
+    source = "synthetic demo",
+    personCount = 1,
+    alertTitle = "Delivery at the door",
+    alertBody = "1 person detected; face not visible",
+    people = listOf(
+        PersonSummary("delivery-person-1", ReviewState.UNRESOLVED, ConfidenceBand.UNKNOWN,
+            0.0, null, null, null, true, false, 1),
+    ),
+    version = 1,
+)
+
+fun offlineUnknownVisit(): VisitSummary = VisitSummary(
+    id = "offline-demo-unknown",
+    eventType = "motion_detected",
+    occurredAt = Instant.now(),
+    status = VisitStatus.READY,
+    source = "synthetic demo",
+    personCount = 1,
+    alertTitle = "Visitor detected",
+    alertBody = "1 person needs review",
+    people = listOf(
+        PersonSummary("unknown-person-1", ReviewState.UNRESOLVED, ConfidenceBand.UNKNOWN,
+            0.0, null, null, null, true, false, 1),
     ),
     version = 1,
 )

@@ -63,10 +63,10 @@ class TimelineViewModel(private val repository: TimelineRepository) : ViewModel(
         }
     }
 
-    fun runDemo() {
+    fun runDemo(scenario: String) {
         viewModelScope.launch {
             loading.value = true
-            apply(repository.runDemo())
+            apply(repository.runDemo(scenario))
             loading.value = false
         }
     }

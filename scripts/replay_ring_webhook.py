@@ -17,7 +17,7 @@ def main() -> None:
     parser.add_argument(
         "--url",
         default="http://127.0.0.1:8000/v1/webhooks/ring",
-        help="Knock Knock webhook endpoint",
+        help="DoorMemo webhook endpoint",
     )
     parser.add_argument(
         "--key-env",
