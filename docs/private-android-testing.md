@@ -27,16 +27,15 @@ does not yet verify that this person owns a Ring account.
    includes available provenance, import/export timestamps, audit history, image
    transformations, and SHA-256 hashes of the exported JPEGs.
 
-The private APK removes INTERNET and RECORD_AUDIO permissions from its merged
-manifest. No audio/video import, remote analytics, model download, cloud face
-matching, cloud visitor log, or cloud backup is enabled. The legacy Python/AWS
-service remains a separate prototype and is not used by this private journal.
-The separate synthetic demo stays visibly separate from private records.
+The current APK requests INTERNET for the separately configured Ring/cloud
+integration and removes RECORD_AUDIO. The local image-import path uses bundled
+models and encrypted local records. Network permission alone does not prove
+that Ring linking or live event handling works; those paths remain unverified.
+The synthetic Nebius demo stays separate from private records.
 
 ## Limits that matter when testing
 
-- Ring is not connected in this APK. Ring account linking and a future metadata
-  relay require separate implementation and a network-enabled build. Using Ring
+- A working Ring connection has not been verified in this APK. Using Ring
   would still involve Ring's cloud; this version makes no fully offline Ring claim.
 - Detected face counts do not establish the total number of people; obscured faces
   are not counted. Local matching thresholds are conservative prototype settings,

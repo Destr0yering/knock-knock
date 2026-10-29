@@ -19,8 +19,11 @@ interface LocalFaceEngine { fun analyze(bitmap: Bitmap): List<DetectedFace> }
 
 /** Both models are bundled: no network calls and no visitor-data training. */
 class OpenCvLocalFaceEngine(private val context: Context) : LocalFaceEngine {
-    private val detector by lazy {
+    private val runtimeInitialized by lazy {
         check(OpenCVLoader.initLocal()) { "Local AI runtime could not initialize." }
+    }
+    private val detector by lazy {
+        runtimeInitialized
         FaceDetectorYN.create(model("face_detection_yunet_2023mar.onnx",
             "8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4"), "", Size(320.0, 320.0), 0.9f)
     }
@@ -31,6 +34,7 @@ class OpenCvLocalFaceEngine(private val context: Context) : LocalFaceEngine {
 
     @Synchronized
     override fun analyze(bitmap: Bitmap): List<DetectedFace> {
+        runtimeInitialized
         val rgba = Mat(); val bgr = Mat(); val faces = Mat()
         try {
             Utils.bitmapToMat(bitmap, rgba)

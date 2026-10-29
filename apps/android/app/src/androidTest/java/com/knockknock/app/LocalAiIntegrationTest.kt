@@ -27,10 +27,10 @@ import kotlinx.coroutines.flow.first
 class LocalAiIntegrationTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
-    @Test fun privateBuildCannotOpenNetworkOrRecordAudio() {
+    @Test fun networkEnabledBuildDoesNotRequestAudio() {
         val permissions = context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_PERMISSIONS)
             .requestedPermissions.orEmpty().toSet()
-        assertFalse(permissions.contains(Manifest.permission.INTERNET))
+        assertTrue(permissions.contains(Manifest.permission.INTERNET))
         assertFalse(permissions.contains(Manifest.permission.RECORD_AUDIO))
     }
 

@@ -16,7 +16,7 @@ integration. Android device validation remains outstanding.
 | App, database and privacy instrumented test APK assembly | Passed |
 | Final expanded local-AI integration test compilation | Passed |
 | APK signature verification with apksigner | Passed, APK Signature Scheme v2 |
-| Packaged permissions inspected with aapt | No INTERNET or RECORD_AUDIO permission |
+| Packaged permissions inspected with aapt | At that earlier build, no INTERNET or RECORD_AUDIO permission; the current network-enabled build requests INTERNET. |
 | Git whitespace check | Passed; existing LF/CRLF conversion warnings only |
 | Local Docker Compose configuration | Validated; container execution not performed |
 
