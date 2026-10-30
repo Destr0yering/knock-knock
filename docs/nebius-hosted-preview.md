@@ -14,6 +14,9 @@ are not a hard dollar cap: AWS requests and storage can still incur charges, and
 throttled requests may also be billable. AWS budgets and alerts are not instantaneous.
 Monitor costs and remove or disable the temporary resources when judging ends.
 The $10 target authorized for this preview is a planning budget, not a guarantee.
+The handler stops live model calls after the judging period, but it does not
+automatically delete the API, Lambda, counter, or artifact bucket. Those
+resources can continue to incur AWS charges until explicitly cleaned up.
 
 The deployment artifact is private and encrypted. The function role can update
 only the counter and resolve only the chosen Secrets Manager secret; MCP service
