@@ -67,6 +67,8 @@ tmp/
 .gradle/
 .kotlin/
 .codex-remote-attachments/
+.codex-nebius-lambda-*/
+infra/nebius-preview/preview-*.zip
 local.properties
 *.iml
 **/build/

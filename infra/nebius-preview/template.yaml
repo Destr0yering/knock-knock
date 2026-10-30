@@ -1,0 +1,121 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Temporary synthetic DoorMemo preview with an atomic lifetime cap on Nebius requests
+Metadata:
+  com.aws.cloudformation.Context:
+    arch: HTTP API -> Lambda -> synthetic workflow; DynamoDB gates metered model calls
+    must:
+      - Never send real visitor data or accept user-provided model input
+      - Reserve a persistent call slot before each live inference attempt
+      - Fail closed to a clearly labeled recorded result if the gate or inference fails
+    ref: [docs/nebius-hosted-preview.md]
+Parameters:
+  ArtifactBucket:
+    Type: String
+    Description: Private deployment artifact bucket
+  ArtifactKey:
+    Type: String
+    Description: Versioned zip object key
+  NebiusSecretArn:
+    Type: String
+    Description: ARN of the existing secret containing the api_key field
+    AllowedPattern: '^arn:.*:secretsmanager:.*:.*:secret:.*$'
+Resources:
+  Counter:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: A single atomic counter enforces a lifetime inference cap across concurrent workers
+        must: [Do not reset the counter while the public preview is active]
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions: [{AttributeName: id, AttributeType: S}]
+      KeySchema: [{AttributeName: id, KeyType: HASH}]
+      SSESpecification: {SSEEnabled: true}
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: {Service: lambda.amazonaws.com}
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: PreviewOnly
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [dynamodb:UpdateItem]
+                Resource: !GetAtt Counter.Arn
+              - Effect: Allow
+                Action: [secretsmanager:GetSecretValue]
+                Resource: !Ref NebiusSecretArn
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+                Condition: {Bool: {'aws:IsMcpServiceAction': 'true'}}
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-preview:*'
+  Preview:
+    Type: AWS::Lambda::Function
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Public fixed-fixture review demo, separated from production visitor records
+        must: [Use runtime secret resolution; never log credentials; cap model attempts]
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-preview'
+      Runtime: python3.12
+      Architectures: [arm64]
+      Handler: handler.handler
+      Role: !GetAtt ExecutionRole.Arn
+      Code: {S3Bucket: !Ref ArtifactBucket, S3Key: !Ref ArtifactKey}
+      MemorySize: 512
+      Timeout: 60
+      Environment:
+        Variables:
+          CALL_LIMIT_TABLE: !Ref Counter
+          SECRET_ID: !Ref NebiusSecretArn
+          NEBIUS_MODEL: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}-preview'
+      RetentionInDays: 7
+  Api:
+    Type: AWS::ApiGatewayV2::Api
+    Properties: {Name: !Sub '${AWS::StackName}-api', ProtocolType: HTTP}
+  Integration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref Api
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt Preview.Arn
+      PayloadFormatVersion: '2.0'
+      TimeoutInMillis: 30000
+  Route:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Api
+      RouteKey: '$default'
+      Target: !Sub 'integrations/${Integration}'
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref Api
+      StageName: '$default'
+      AutoDeploy: true
+      DefaultRouteSettings: {ThrottlingBurstLimit: 4, ThrottlingRateLimit: 0.2}
+  InvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Preview
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/*/*'
+Outputs:
+  PreviewUrl:
+    Value: !GetAtt Api.ApiEndpoint

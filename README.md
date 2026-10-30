@@ -87,6 +87,12 @@ python scripts/run_local_demo.py
 
 ### Nebius hackathon preview
 
+Try the [hosted synthetic review](https://j645n8cjxi.execute-api.us-east-1.amazonaws.com/).
+Live Nemotron calls are limited to 20 attempts across the event; after the limit
+or on service failure, the page clearly labels a previously recorded result.
+The hosted preview is separate from the Android journal and contains only
+fabricated data.
+
 The optional local interactive demo, `scripts/nebius_review_demo.py`, runs a
 synthetic review and uses NVIDIA Nemotron through Nebius Token Factory to
 summarize only a fabricated count and generic review status. No visitor photos,
